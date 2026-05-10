@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>ひろみの英単語フラッシュカード</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  min-height: 100vh; min-height: 100dvh;
+  background: linear-gradient(145deg, #0a0a1a 0%, #141432 40%, #1a1a3e 100%);
+  color: #e8e6f0;
+  font-family: 'Noto Sans JP', 'Segoe UI', sans-serif;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 20px 16px 40px;
+  -webkit-tap-highlight-color: transparent;
+  overflow-x: hidden;
+}
+
+/* Header */
+.header { width: 100%; max-width: 480px; text-align: center; margin-bottom: 16px; }
+.header h1 {
+  font-size: 20px; font-weight: 800; letter-spacing: 0.05em;
+  background: linear-gradient(90deg, #7dd3fc, #c4b5fd, #f9a8d4);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.header .subtitle { font-size: 12px; color: #8888aa; margin-top: 4px; }
+
+/* Controls */
+.controls {
+  width: 100%; max-width: 480px;
+  display: flex; gap: 8px; margin-bottom: 12px;
+  flex-wrap: wrap; justify-content: center;
+}
+.pill {
+  padding: 6px 14px; border-radius: 20px;
+  border: 1px solid #333355; background: rgba(30,30,60,0.6);
+  color: #8888aa; font-size: 13px; cursor: pointer;
+  transition: all 0.2s; font-weight: 400; font-family: inherit;
+}
+.pill.active {
+  border-color: #7dd3fc; background: rgba(125,211,252,0.15);
+  color: #7dd3fc; font-weight: 700;
+}
+.settings-btn {
+  padding: 6px 14px; border-radius: 20px;
+  border: 1px dashed #555577; background: transparent;
+  color: #8888aa; font-size: 13px; cursor: pointer; font-family: inherit;
+}
+
+/* Settings Panel */
+.settings-panel {
+  width: 100%; max-width: 480px;
+  background: rgba(30,30,60,0.9); border: 1px solid rgba(125,211,252,0.15);
+  border-radius: 16px; padding: 20px; margin-bottom: 16px;
+  display: none;
+}
+.settings-panel.show { display: block; }
+.settings-panel .hint { font-size: 13px; color: #aaaacc; margin-bottom: 10px; line-height: 1.6; }
+.settings-panel code { color: #7dd3fc; }
+.range-row {
+  display: flex; gap: 8px; align-items: center;
+  margin-top: 12px; flex-wrap: wrap;
+}
+.range-row span { font-size: 13px; color: #8888aa; }
+.range-input {
+  width: 70px; padding: 6px 10px; border-radius: 8px;
+  border: 1px solid #444466; background: #1a1a3e;
+  color: #e8e6f0; font-size: 14px; text-align: center; font-family: inherit;
+}
+.range-btn {
+  padding: 8px 18px; border-radius: 8px; border: none;
+  background: linear-gradient(135deg, #7dd3fc, #60a5fa);
+  color: #0a0a1a; font-weight: 700; font-size: 13px;
+  cursor: pointer; font-family: inherit;
+}
+.csv-section { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.06); }
+
+/* Progress */
+.progress-wrap { width: 100%; max-width: 480px; margin-bottom: 16px; }
+.progress-label {
+  display: flex; justify-content: space-between;
+  font-size: 12px; color: #8888aa; margin-bottom: 4px;
+}
+.progress-bar {
+  width: 100%; height: 6px; border-radius: 3px;
+  background: rgba(255,255,255,0.06); overflow: hidden;
+}
+.progress-fill {
+  height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, #7dd3fc, #c4b5fd);
+  transition: width 0.4s ease; width: 0%;
+}
+
+/* Card */
+.card-container {
+  width: 100%; max-width: 480px;
+  perspective: 800px; margin-bottom: 20px;
+}
+.card {
+  width: 100%; min-height: 220px; border-radius: 20px;
+  cursor: pointer; position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+.card.flipped { transform: rotateY(180deg); }
+.card-face {
+  width: 100%; min-height: 220px; border-radius: 20px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  backface-visibility: hidden;
+  padding: 30px 20px;
+}
+.card-front {
+  position: relative;
+  background: linear-gradient(135deg, rgba(30,30,70,0.9), rgba(40,40,90,0.9));
+  border: 1px solid rgba(125,211,252,0.15);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.card-back {
+  position: absolute; top: 0; left: 0;
+  transform: rotateY(180deg);
+  background: linear-gradient(135deg, rgba(20,50,60,0.95), rgba(30,60,80,0.95));
+  border: 1px solid rgba(125,211,252,0.15);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+}
+.card-label {
+  font-size: 11px; color: #7dd3fc; letter-spacing: 0.12em;
+  text-transform: uppercase; margin-bottom: 12px; font-weight: 600;
+}
+.card-text {
+  font-size: 36px; font-weight: 700; text-align: center;
+  line-height: 1.3; color: #f0f0ff; word-break: break-word;
+}
+.card-text.ja { font-size: 22px; font-weight: 700; }
+.tap-hint { font-size: 11px; color: #666688; margin-top: 16px; }
+.card-number { font-size: 10px; color: #555577; margin-top: 8px; }
+
+/* Buttons */
+.buttons { width: 100%; max-width: 480px; display: flex; gap: 12px; }
+.btn {
+  flex: 1; padding: 14px 0; border-radius: 14px; border: none;
+  font-size: 16px; font-weight: 700; cursor: pointer;
+  transition: all 0.2s; color: #fff; font-family: inherit;
+}
+.btn:active { transform: scale(0.97); }
+.btn-wrong {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 4px 20px rgba(220,38,38,0.3);
+}
+.btn-correct {
+  background: linear-gradient(135deg, #059669, #047857);
+  box-shadow: 0 4px 20px rgba(5,150,105,0.3);
+}
+
+/* Summary */
+.summary { width: 100%; max-width: 480px; text-align: center; display: none; }
+.summary.show { display: block; }
+.summary-label { font-size: 14px; color: #8888aa; margin-top: 20px; }
+.summary-score {
+  font-size: 56px; font-weight: 800;
+  background: linear-gradient(90deg, #7dd3fc, #c4b5fd);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.summary-rate { font-size: 16px; color: #aaaacc; margin-top: 4px; }
+.wrong-list {
+  text-align: left; background: rgba(255,255,255,0.04);
+  border-radius: 14px; padding: 16px 20px; margin-top: 16px;
+  max-height: 300px; overflow-y: auto;
+}
+.wrong-list-title { font-size: 13px; color: #f87171; font-weight: 700; margin-bottom: 8px; }
+.wrong-item {
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-size: 14px; display: flex; justify-content: space-between; gap: 12px;
+}
+.wrong-item:last-child { border-bottom: none; }
+.wrong-item .en { color: #e8e6f0; white-space: nowrap; }
+.wrong-item .ja { color: #8888aa; text-align: right; font-size: 12px; }
+.summary-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 20px; }
+.restart-btn {
+  padding: 14px 24px; border-radius: 14px; border: none;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  color: #fff; font-family: inherit;
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  box-shadow: 0 4px 20px rgba(124,58,237,0.3);
+}
+.restart-btn:active { transform: scale(0.97); }
+.restart-btn.retry-wrong {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  box-shadow: 0 4px 20px rgba(220,38,38,0.3);
+}
+
+/* Study area */
+.study-area { width: 100%; max-width: 480px; display: none; }
+.study-area.show { display: block; }
+
+/* Animations */
+@keyframes slideOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(-60px); } }
+@keyframes slideIn { from { opacity:0; transform:translateX(60px); } to { opacity:1; transform:translateX(0); } }
+.slide-out .card-container { animation: slideOut 0.25s ease-out; }
+.slide-in .card-container { animation: slideIn 0.3s ease-out; }
+
+/* Footer */
+.footer { margin-top: 40px; font-size: 11px; color: #444466; text-align: center; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>ひろみの英単語フラッシュカード</h1>
+  <p class="subtitle" id="subtitle">全1,495語</p>
+</div>
+
+<div class="controls">
+  <button class="pill active" id="btnEn2Ja" onclick="setDirection('en2ja')">英→日</button>
+  <button class="pill" id="btnJa2En" onclick="setDirection('ja2en')">日→英</button>
+  <button class="settings-btn" onclick="toggleSettings()">⚙ 設定</button>
+</div>
+
+<div class="settings-panel" id="settingsPanel">
+  <div class="hint">出題範囲を番号で指定できます（シス単の並び順）</div>
+  <div class="range-row">
+    <span>範囲：</span>
+    <input class="range-input" type="number" id="rangeStart" value="1" min="1">
+    <span style="color:#666">〜</span>
+    <input class="range-input" type="number" id="rangeEnd" value="0" min="0" placeholder="全部">
+    <span style="font-size:11px;color:#666688" id="rangeNote">(0=全1437語)</span>
+  </div>
+  <div style="margin-top:12px">
+    <button class="range-btn" onclick="applyRange()">この範囲で開始</button>
+  </div>
+  <div class="filter-section" style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.06)">
+    <div class="hint">累計の記録をもとに出題を絞り込めます</div>
+    <div id="recordStats" style="font-size:12px;color:#8888aa;margin:8px 0"></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px">
+      <button class="range-btn" onclick="startFromRecord('wrong')" id="btnFilterWrong" style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:#fff">❌ わからないだけ</button>
+      <button class="range-btn" onclick="startFromRecord('correct')" id="btnFilterCorrect" style="background:linear-gradient(135deg,#059669,#047857);color:#fff">✅ 覚えただけ</button>
+      <button class="pill" onclick="resetRecord()" style="border-color:#f87171;color:#f87171;margin-top:4px">🗑 記録をリセット</button>
+    </div>
+  </div>
+  <div class="csv-section">
+    <div class="hint">別のCSVファイルで差し替えも可能：</div>
+    <input type="file" accept=".csv,.tsv,.txt" onchange="handleFileImport(event)" style="font-size:13px;color:#e8e6f0">
+  </div>
+</div>
+
+<div class="study-area show" id="studyArea">
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span id="progressCount">1 / 100</span>
+      <span id="progressScore">✅ 0　❌ 0</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+  </div>
+  <div class="card-container" id="cardContainer">
+    <div class="card" id="card" onclick="flipCard()">
+      <div class="card-face card-front">
+        <div class="card-label" id="frontLabel">English</div>
+        <div class="card-text" id="frontText">apple</div>
+        <div class="tap-hint" id="tapHint">タップでめくる</div>
+        <div class="card-number" id="cardNumber"></div>
+      </div>
+      <div class="card-face card-back">
+        <div class="card-label" id="backLabel">日本語</div>
+        <div class="card-text ja" id="backText">りんご</div>
+      </div>
+    </div>
+  </div>
+  <div class="buttons">
+    <button class="btn btn-wrong" onclick="answer(false)">✗ わからない</button>
+    <button class="btn btn-correct" onclick="answer(true)">✓ 覚えた！</button>
+  </div>
+</div>
+
+<div class="summary" id="summary">
+  <div class="summary-label">結果</div>
+  <div class="summary-score" id="summaryScore">0 / 0</div>
+  <div class="summary-rate" id="summaryRate">正答率 0%</div>
+  <div class="wrong-list" id="wrongList" style="display:none">
+    <div class="wrong-list-title" id="wrongListTitle">❌ 要復習</div>
+    <div id="wrongItems"></div>
+  </div>
+  <div id="summaryRecordStats" style="font-size:12px;color:#666688;margin-top:16px"></div>
+  <div class="summary-actions">
+    <button class="restart-btn" onclick="startRound()">🔄 もう一度（全体）</button>
+    <button class="restart-btn retry-wrong" id="retryWrongBtn" onclick="retryWrong()" style="display:none">🔁 間違えた語だけ復習</button>
+  </div>
+</div>
+
+<div class="footer">
+  ひろみの英単語データ（1,495語）内蔵<br>
+  CSVで差し替えも可能
+</div>
+
+<script>
+// ═══════ Built-in word data ═══════
+const BUILTIN_WORDS = [{"en": "morning", "ja": "[名] 朝, 午前"}, {"en": "afternoon", "ja": "[名] 午後"}, {"en": "evening", "ja": "[名] 夕方, 晩"}, {"en": "night", "ja": "[名] 夜, 晩"}, {"en": "Japan", "ja": "[名] 日本"}, {"en": "classmate", "ja": "[名] クラスメート, 同級生"}, {"en": "friend", "ja": "[名] 友だち"}, {"en": "notebook", "ja": "[名] ノート"}, {"en": "pen", "ja": "[名] ペン"}, {"en": "pencil", "ja": "[名] えんぴつ"}, {"en": "paper", "ja": "[名] ①紙 ②新聞"}, {"en": "eraser", "ja": "[名] 消しゴム；黒板ふき"}, {"en": "English", "ja": "[名] 英語 [形] 英語の, イングランド(人)の"}, {"en": "teacher", "ja": "[名] 先生, 教師"}, {"en": "America", "ja": "[名] アメリカ；アメリカ大陸"}, {"en": "Canada", "ja": "[名] カナダ"}, {"en": "Britain", "ja": "[名] イギリス"}, {"en": "India", "ja": "[名] インド"}, {"en": "Australia", "ja": "[名] オーストラリア"}, {"en": "China", "ja": "[名] 中国"}, {"en": "Korea", "ja": "[名] 韓国, 朝鮮"}, {"en": "picture", "ja": "[名] ①写真 ②絵"}, {"en": "family", "ja": "[名] 家族"}, {"en": "father", "ja": "[名] 父, 父親, お父さん"}, {"en": "brother", "ja": "[名] 兄弟, 兄, 弟"}, {"en": "girl", "ja": "[名] 女の子, 少女"}, {"en": "call", "ja": "[動] ①AをBと呼ぶ ②〈人など〉に呼びかける ③〈〜に〉電話をかける"}, {"en": "excuse", "ja": "[動] 〜を許す"}, {"en": "meet", "ja": "[動] 〜に会う, 〜と約束して会う"}, {"en": "thank", "ja": "[動] 〈人〉に感謝する, 礼を言う"}, {"en": "come", "ja": "[動] 来る"}, {"en": "start", "ja": "[動] ①始まる；〜を始める ②出発する"}, {"en": "go", "ja": "[動] ①行く, 去る ②〈ある状態〉になる"}, {"en": "open", "ja": "[動] (本・窓などを) 開く；始まる [形] 開いている"}, {"en": "repeat", "ja": "[動] (〜を) 繰り返して言う, 繰り返す"}, {"en": "read", "ja": "[動] (〜を) 読む, 読書する"}, {"en": "listen", "ja": "[動] 聞く, 耳をかたむける"}, {"en": "look", "ja": "[動] ①Aを見る ②Cに見える ③ほら, いいかい"}, {"en": "have", "ja": "[動] ①〜を持っている ②〜を食べる, 飲む ③〜を経験する"}, {"en": "stand", "ja": "[動] 立つ, 立っている"}, {"en": "sit", "ja": "[動] 座る"}, {"en": "speak", "ja": "[動] 〈言語〉を話す；話す, しゃべる"}, {"en": "study", "ja": "[動] (〜を) 勉強する"}, {"en": "like", "ja": "[動] 〜を好む"}, {"en": "teach", "ja": "[動] 〜を教える"}, {"en": "know", "ja": "[動] 〜を知っている"}, {"en": "join", "ja": "[動] 〜に入る, 参加する, 〜と一緒になる"}, {"en": "love", "ja": "[動] 〜を愛している, 〜が大好きだ [名] 愛"}, {"en": "play", "ja": "[動] 〈球技〉をする, 〈楽器〉を演奏する；遊ぶ"}, {"en": "tell", "ja": "[動] 〈人〉に教える, 伝える, 言う"}, {"en": "practice", "ja": "[動] 〜を練習する, けいこする [名] 練習"}, {"en": "swim", "ja": "[動] 泳ぐ"}, {"en": "run", "ja": "[動] 走る"}, {"en": "catch", "ja": "[動] ①〜をつかまえる ②〈乗り物〉に間に合う [名] とらえること"}, {"en": "sing", "ja": "[動] (〜を) 歌う"}, {"en": "dance", "ja": "[動] 踊る [名] 踊り, ダンス"}, {"en": "nice", "ja": "[形] ①よい, りっぱな ②親切な"}, {"en": "fine", "ja": "[形] ①元気な ②すばらしい, きれいな ③天気のよい, 晴れた"}, {"en": "good", "ja": "[形] ①よい, すばらしい, 正しい ②上手な"}, {"en": "American", "ja": "[形] アメリカ(人)の [名] アメリカ人"}, {"en": "Canadian", "ja": "[形] カナダ(人)の [名] カナダ人"}, {"en": "British", "ja": "[形] イギリス(人)の [名] イギリス人"}, {"en": "Indian", "ja": "[形] インド(人)の [名] インド人"}, {"en": "Australian", "ja": "[形] オーストラリア(人)の [名] オーストラリア人"}, {"en": "Chinese", "ja": "[形] 中国(人)の [名] 中国人, 中国語"}, {"en": "Korean", "ja": "[形] 韓国(人)の, 朝鮮(人)の [名] 韓国(朝鮮)人, 韓国(朝鮮)語"}, {"en": "next", "ja": "[形] ①Aの隣の ②次の [副] 次に"}, {"en": "much", "ja": "[形] [副] 多量の(に), 大いに, たくさんの [名] 多量(のもの)"}, {"en": "happy", "ja": "[形] 楽しい, 幸福な, うれしい"}, {"en": "new", "ja": "[形] 新しい"}, {"en": "old", "ja": "[形] 古い, 年をとった"}, {"en": "quiet", "ja": "[形] 静かな, おとなしい"}, {"en": "foreign", "ja": "[形] 外国の"}, {"en": "every", "ja": "[形] ①毎〜 ②あらゆる, すべての"}, {"en": "high", "ja": "[形] (高さが) 高い, (値段・程度などが) 高い"}, {"en": "easy", "ja": "[形] かんたんな, やさしい"}, {"en": "yes", "ja": "[副] はい, そうです"}, {"en": "too", "ja": "[副] ①〜もまた, 同様に ②あまりにも, 〜すぎ"}, {"en": "how", "ja": "[副] ①どんな状態で・どのように, どんな方法で ②どれほど"}, {"en": "no", "ja": "[副] いいえ, いや [形] ひとつも〜ない, 少しも〜ない"}, {"en": "where", "ja": "[副] どこで(に, へ)"}, {"en": "not", "ja": "[副] 〜でない, 〜しない"}, {"en": "now", "ja": "[副] ①今 (では), 現在 ②さて, さあ"}, {"en": "about", "ja": "[副] およそ, 約, 〜ごろ [前] 〜について"}, {"en": "o'clock", "ja": "[副] 〜時"}, {"en": "today", "ja": "[副] 今日(は) [名] 今日"}, {"en": "sister", "ja": "[名] 姉妹, 姉, 妹"}, {"en": "name", "ja": "[名] 名前 [動] 〜を名づける"}, {"en": "son", "ja": "[名] 息子"}, {"en": "daughter", "ja": "[名] 娘"}, {"en": "mother", "ja": "[名] 母, 母親, お母さん"}, {"en": "doctor", "ja": "[名] 医者"}, {"en": "bag", "ja": "[名] かばん, バッグ"}, {"en": "car", "ja": "[名] 車, 自動車"}, {"en": "parent", "ja": "[名] 親 (父または母)；両親"}, {"en": "house", "ja": "[名] 家, 家屋"}, {"en": "phone", "ja": "[名] 電話 (機)"}, {"en": "number", "ja": "[名] 数字, 数, 番号"}, {"en": "book", "ja": "[名] 本"}, {"en": "dollar", "ja": "[名] ドル"}, {"en": "time", "ja": "[名] ①時間, 時, 時期 ②〜回"}, {"en": "school", "ja": "[名] 学校"}, {"en": "day", "ja": "[名] ①日, 曜日 ②日中, 昼"}, {"en": "birthday", "ja": "[名] 誕生日"}, {"en": "week", "ja": "[名] 週"}, {"en": "Sunday", "ja": "[名] 日曜日"}, {"en": "Monday", "ja": "[名] 月曜日"}, {"en": "Tuesday", "ja": "[名] 火曜日"}, {"en": "Wednesday", "ja": "[名] 水曜日"}, {"en": "Thursday", "ja": "[名] 木曜日"}, {"en": "Friday", "ja": "[名] 金曜日"}, {"en": "Saturday", "ja": "[名] 土曜日"}, {"en": "holiday", "ja": "[名] 休日, 祝日, 祭日"}, {"en": "date", "ja": "[名] 日付"}, {"en": "first", "ja": "[名] 一日 [形] 第一の(に), 最初の"}, {"en": "January", "ja": "[名] 1月"}, {"en": "explain", "ja": "[動] 〜について説明する"}, {"en": "see", "ja": "[動] 〜が見える, 目に入る"}, {"en": "wash", "ja": "[動] (〜を) 洗う, 洗濯する"}, {"en": "close", "ja": "[動] 〜を閉める, 閉まる [形] [副] 接近した, 親しい；近くに, 接近して"}, {"en": "brush", "ja": "[動] 〜を (ブラシで) 磨く [名] ブラシ；はけ"}, {"en": "touch", "ja": "[動] 〜に触れる [名] 接触"}, {"en": "raise", "ja": "[動] 〜を上げる"}, {"en": "hold", "ja": "[動] ①〜を持つ, 抱く, 保つ ②〈会など〉を開く"}, {"en": "remember", "ja": "[動] (〜を) 覚えている, (〜を) 思い出す"}, {"en": "have", "ja": "[動] ①〜を食べる, 飲む ②〜を持っている ③〜を経験する"}, {"en": "eat", "ja": "[動] (〜を) 食べる"}, {"en": "cook", "ja": "[動] 〜を料理する [名] 料理人"}, {"en": "make", "ja": "[動] ①〜を作る ②CをCにする"}, {"en": "put", "ja": "[動] 〜を置く, 入れる"}, {"en": "talk", "ja": "[動] 話す, しゃべる [名] 話"}, {"en": "call", "ja": "[動] ①(〜に) 電話をかける ②AをBと呼ぶ ③〈人など〉に呼びかける"}, {"en": "write", "ja": "[動] (手紙などを) 書く"}, {"en": "drive", "ja": "[動] (車を) 運転する"}, {"en": "bring", "ja": "[動] 〜を持ってくる, 連れてくる"}, {"en": "take", "ja": "[動] ①〜を持っていく, 持っていく ②〜を取る ③〜で時間がかかる, (乗り物) に乗る ④(時間) がかかる"}, {"en": "stay", "ja": "[動] 滞在する, いる, とどまる [名] 滞在"}, {"en": "walk", "ja": "[動] 歩く, 歩いて行く [名] 散歩, 歩くこと"}, {"en": "visit", "ja": "[動] (〜を) 訪問する [名] 訪問"}, {"en": "climb", "ja": "[動] (〜に) 登る"}, {"en": "fly", "ja": "[動] 飛ぶ, (飛行機で) 行く"}, {"en": "rise", "ja": "[動] 上がる, 上昇する；増える"}, {"en": "live", "ja": "[動] 住む, 生きる"}, {"en": "clean", "ja": "[動] (〜を) きれいにする, 掃除する [形] きれいな, 清潔な"}, {"en": "watch", "ja": "[動] 〜をじっと見る [名] 腕時計"}, {"en": "interesting", "ja": "[形] (もの・ことが) 興味深い, おもしろい"}, {"en": "sorry", "ja": "[形] すまないと思って, かわいそうで, 残念に思って"}, {"en": "any", "ja": "[形] 何か, どれか, いくつかの ①少しも (〜ない) ②どんな〜も"}, {"en": "some", "ja": "[形] ①いくつかの, いくらかの ②少しの [代] ①いくつかのもの, いくらかのもの ②ある人たち [もの]"}, {"en": "many", "ja": "[形] 多数の, 多くの [名] 多数 (のもの)"}, {"en": "pretty", "ja": "[形] かわいい, きれいな"}, {"en": "beautiful", "ja": "[形] 美しい, きれいな"}, {"en": "red", "ja": "[形] 赤い [名] 赤"}, {"en": "blue", "ja": "[形] 青い [名] 青"}, {"en": "yellow", "ja": "[形] 黄色い [名] 黄色"}, {"en": "green", "ja": "[形] 緑の [名] 緑"}, {"en": "pink", "ja": "[形] ピンクの [名] ピンク"}, {"en": "purple", "ja": "[形] 紫の [名] 紫"}, {"en": "white", "ja": "[形] 白い [名] 白"}, {"en": "black", "ja": "[形] 黒い [名] 黒"}, {"en": "brown", "ja": "[形] 茶色い [名] 茶色"}, {"en": "gray", "ja": "[形] 灰色の [名] 灰色"}, {"en": "strong", "ja": "[形] 強い, 丈夫な, (コーヒーなどが) 濃い"}, {"en": "long", "ja": "[形] 長い [副] 長く"}, {"en": "soft", "ja": "[形] やわらかい"}, {"en": "favorite", "ja": "[形] お気に入りの, 一番好きな [名] お気に入りの人 [もの]"}, {"en": "enough", "ja": "[形] 十分な [名] 十分な量 [もの] [副] 十分に"}, {"en": "hungry", "ja": "[形] 空腹の, 空腹の, 飢えた"}, {"en": "thirsty", "ja": "[形] のどがかわいた"}, {"en": "dear", "ja": "[形] 親愛なる"}, {"en": "small", "ja": "[形] 小さい, 狭い, 少ない"}, {"en": "large", "ja": "[形] ①大きい ②多量の ③ほとんどない [副] 少し, ほとんど〜ない"}, {"en": "big", "ja": "[形] 大きい, 〇年上の"}, {"en": "last", "ja": "[形] ①この前の ②最後の [副] 最後に [名] 最後 [動] 続く"}, {"en": "interesting", "ja": "[形] (人が) 興味を持っている"}, {"en": "February", "ja": "[名] 2月"}, {"en": "March", "ja": "[名] 3月"}, {"en": "April", "ja": "[名] 4月"}, {"en": "May", "ja": "[名] 5月"}, {"en": "June", "ja": "[名] 6月"}, {"en": "July", "ja": "[名] 7月"}, {"en": "August", "ja": "[名] 8月"}, {"en": "September", "ja": "[名] 9月"}, {"en": "October", "ja": "[名] 10月"}, {"en": "November", "ja": "[名] 11月"}, {"en": "December", "ja": "[名] 12月"}, {"en": "season", "ja": "[名] 季節"}, {"en": "year", "ja": "[名] 年, 1年；歳"}, {"en": "spring", "ja": "[名] 春"}, {"en": "summer", "ja": "[名] 夏"}, {"en": "fall", "ja": "[名] 秋 [動] 落ちる"}, {"en": "winter", "ja": "[名] 冬"}, {"en": "month", "ja": "[名] (暦の) 月, ひと月"}, {"en": "grandmother", "ja": "[名] 祖母, おばあちゃん"}, {"en": "grandfather", "ja": "[名] 祖父, おじいちゃん"}, {"en": "grandparent", "ja": "[名] 祖父母"}, {"en": "grandchild", "ja": "[名] 孫"}, {"en": "bike", "ja": "[名] 自転車"}, {"en": "textbook", "ja": "[名] 教科書"}, {"en": "page", "ja": "[名] ページ"}, {"en": "blackboard", "ja": "[名] 黒板"}, {"en": "question", "ja": "[名] 質問, 問い [動] 〜に質問する"}, {"en": "word", "ja": "[名] 語, 単語, 言葉"}, {"en": "Japanese", "ja": "[名] 日本語；日本人 [形] 日本の, 日本人の, 日本語の"}, {"en": "student", "ja": "[名] 学生"}, {"en": "enjoy", "ja": "[動] 〜を楽しむ"}, {"en": "was", "ja": "[動] [助] am, isの過去形"}, {"en": "sleep", "ja": "[動] 眠る [名] 眠り"}, {"en": "help", "ja": "[動] ①(人) を手伝う, 手助けする ②〜を促進する, 役立つ"}, {"en": "ask", "ja": "[動] ①(人) にたずねる, (〜を) たずねる ②(人) に頼む"}, {"en": "move", "ja": "[動] ①引っ越しする, 動く ②〜を動かす"}, {"en": "use", "ja": "[動] 〜を使う, 利用する [名] 使うこと, 使用"}, {"en": "buy", "ja": "[動] 〜を買う"}, {"en": "want", "ja": "[動] 〜が欲しい, 〜を望む"}, {"en": "find", "ja": "[動] ①〜を見つける ②〜とわかる, 〜と思う"}, {"en": "worry", "ja": "[動] 心配する；(人) を心配させる"}, {"en": "wear", "ja": "[動] 〜を着ている"}, {"en": "drink", "ja": "[動] (〜を) 飲む, 酒を飲む [名] 飲み物"}, {"en": "forget", "ja": "[動] (〜を) 忘れる"}, {"en": "rain", "ja": "[動] 雨が降る [名] 雨"}, {"en": "change", "ja": "[動] ①〜を変える, 変わる ②着替える [名] ①変化 ②おつり"}, {"en": "lead", "ja": "[動] 通じる, 至る；〜を導く"}, {"en": "travel", "ja": "[動] 旅行する [名] 旅行"}, {"en": "follow", "ja": "[動] ①〜に従う, 〜を守る ②〜について行く"}, {"en": "return", "ja": "[動] ①戻る, 帰る ②〜を戻す, 返す"}, {"en": "wait", "ja": "[動] 待つ"}, {"en": "reach", "ja": "[動] 〜に着く"}, {"en": "leave", "ja": "[動] ①出発する, 〜を去る, 残す, 置いておく"}, {"en": "get", "ja": "[動] ①〜を手に入れる ②Cになる"}, {"en": "think", "ja": "[動] 〜と思う, 考える"}, {"en": "hope", "ja": "[動] 〜を望む, 願う [名] 希望"}, {"en": "become", "ja": "[動] 〜になる"}, {"en": "say", "ja": "[動] 〜と言う"}, {"en": "agree", "ja": "[動] 同意する, 賛成する"}, {"en": "show", "ja": "[動] ①〜を示す, 見せる, 表す ②案内する [名] 見世物, (テレビなどの) 番組"}, {"en": "jump", "ja": "[動] 跳ぶ, 跳躍する"}, {"en": "exciting", "ja": "[形] (人) をわくわくさせるような, 興奮させる"}, {"en": "busy", "ja": "[形] 忙しい"}, {"en": "tired", "ja": "[形] ①疲れている ②飽きている"}, {"en": "together", "ja": "[副] 一緒に, 共に"}, {"en": "carefully", "ja": "[副] 注意して, 注意深く"}, {"en": "up", "ja": "[副] 上に, 上の方へ"}, {"en": "down", "ja": "[副] 下に, 下の方へ"}, {"en": "hard", "ja": "[副] 一生懸命に [形] むずかしい；かたい"}, {"en": "when", "ja": "[副] いつ [接] 〜するときに"}, {"en": "fast", "ja": "[副] 速く [形] 速い"}, {"en": "very", "ja": "[副] 非常に, たいへん"}, {"en": "well", "ja": "[副] 上手に, よく [形] 健康な [間] えと"}, {"en": "often", "ja": "[副] しばしば, たいてい"}, {"en": "once", "ja": "[副] ①1回, 1度 ②かつて, 以前"}, {"en": "twice", "ja": "[副] 2回, 2度"}, {"en": "really", "ja": "[副] 本当に"}, {"en": "here", "ja": "[副] ここに [へ, で]"}, {"en": "usually", "ja": "[副] たいてい, ふつうは"}, {"en": "sometimes", "ja": "[副] ときどき"}, {"en": "OK", "ja": "[副] はい, いいよ [形] よろしい"}, {"en": "sure", "ja": "[副] いいとも, その通り [形] 確信している, 信じている"}, {"en": "again", "ja": "[副] もう一度, また"}, {"en": "tomorrow", "ja": "[副] 明日に [名] 明日"}, {"en": "soon", "ja": "[副] まもなく, すぐに"}, {"en": "out", "ja": "[副] ①外に ②不在で ③すっかり ④消えて"}, {"en": "only", "ja": "[副] ほんの, たった [形] ただひとつの, 唯一の"}, {"en": "yesterday", "ja": "[副] 昨日 (は) [名] 昨日"}, {"en": "early", "ja": "[副] 早く [形] 早い"}, {"en": "late", "ja": "[副] 遅く [形] 遅い"}, {"en": "ago", "ja": "[副] (今から) 〜前に"}, {"en": "language", "ja": "[名] 言語, 言葉"}, {"en": "class", "ja": "[名] ①授業 ②学級, クラス"}, {"en": "minute", "ja": "[名] 分"}, {"en": "math", "ja": "[名] 数学"}, {"en": "science", "ja": "[名] 科学"}, {"en": "history", "ja": "[名] 歴史"}, {"en": "P.E.", "ja": "[名] 体育"}, {"en": "music", "ja": "[名] 音楽"}, {"en": "event", "ja": "[名] 行事, できごと, 事件"}, {"en": "end", "ja": "[名] 終わり [動] 終わる, 〜を終える"}, {"en": "computer", "ja": "[名] コンピュータ"}, {"en": "club", "ja": "[名] クラブ, 部"}, {"en": "sport", "ja": "[名] スポーツ, 運動"}, {"en": "player", "ja": "[名] 選手"}, {"en": "baseball", "ja": "[名] 野球"}, {"en": "tennis", "ja": "[名] テニス"}, {"en": "basketball", "ja": "[名] バスケットボール"}, {"en": "football", "ja": "[名] ①アメリカンフットボール ②サッカー"}, {"en": "soccer", "ja": "[名] サッカー"}, {"en": "rugby", "ja": "[名] ラグビー"}, {"en": "volleyball", "ja": "[名] バレーボール"}, {"en": "cricket", "ja": "[名] クリケット"}, {"en": "badminton", "ja": "[名] バドミントン"}, {"en": "golf", "ja": "[名] ゴルフ"}, {"en": "gym", "ja": "[名] 体育館, ジム"}, {"en": "member", "ja": "[名] 一員, メンバー"}, {"en": "team", "ja": "[名] チーム, 組"}, {"en": "rule", "ja": "[名] 規則"}, {"en": "game", "ja": "[名] 試合, 競技；ゲーム"}, {"en": "sea", "ja": "[名] 海"}, {"en": "remain", "ja": "[動] ①残る ②〜のままである"}, {"en": "mean", "ja": "[動] 〜を意味する"}, {"en": "understand", "ja": "[動] 〜を理解する"}, {"en": "record", "ja": "[動] (〜を) 記録する, 録音 [録画] する [名] 記録, 録音 [録画]"}, {"en": "win", "ja": "[動] 〜に勝つ, 〜を勝ちとる"}, {"en": "hit", "ja": "[動] ①〜をたたく, 打つ ②(天災などが) 〜をおそう, 〜に打撃を与える"}, {"en": "knock", "ja": "[動] ノックする, (〜を) たたく"}, {"en": "lose", "ja": "[動] ①〜を失う, なくす ②(試合などに) 負ける"}, {"en": "keep", "ja": "[動] ①〜を保つ, 置いておく ②ずっとCのままでいる"}, {"en": "dump", "ja": "[動] (ゴミなど) を捨てる, 処分する"}, {"en": "need", "ja": "[動] 〜を必要とする [名] 必要"}, {"en": "ring", "ja": "[動] 鳴る, 響く"}, {"en": "receive", "ja": "[動] 〜を受け取る"}, {"en": "pray", "ja": "[動] 祈る"}, {"en": "push", "ja": "[動] 〜を押す"}, {"en": "build", "ja": "[動] 〜を建てる"}, {"en": "roll", "ja": "[動] 転がる"}, {"en": "happen", "ja": "[動] 起こる, 生じる"}, {"en": "choose", "ja": "[動] (〜を) 選ぶ"}, {"en": "set", "ja": "[動] ①〜を定める, 設定する ②〜を配置する, 置く ③(太陽が) 沈む [名] 一組"}, {"en": "search", "ja": "[動] 探す；(場所) を探す"}, {"en": "share", "ja": "[動] 〜を共有する, 分かち合う [名] 取り分"}, {"en": "hurt", "ja": "[動] (人の体) を痛める, (人) を傷つける, (体の一部が) 痛む, (注射などが) 痛みを与える"}, {"en": "grow", "ja": "[動] (農作物) を栽培する；成長する, 育つ"}, {"en": "sell", "ja": "[動] 〜を売る, (もの)が売れる"}, {"en": "bake", "ja": "[動] (パン・クッキーなど) を焼く"}, {"en": "cut", "ja": "[動] 〜を切る"}, {"en": "finish", "ja": "[動] 〜を終える"}, {"en": "give", "ja": "[動] ①〜を与える, あげる ②(会など) を開く, もよおす"}, {"en": "wrap", "ja": "[動] 〜を包む, くるむ, 巻く"}, {"en": "absent", "ja": "[形] 欠席の, 不在の"}, {"en": "sick", "ja": "[形] 病気の, 病人である；吐き気がして"}, {"en": "sunny", "ja": "[形] 晴れた, 日当たりのよい"}, {"en": "hot", "ja": "[形] 暑い, 熱い；辛い"}, {"en": "cloudy", "ja": "[形] 曇っている, 曇りの"}, {"en": "cool", "ja": "[形] ①涼しい, ひんやりとした；冷たい；冷静な ②かっこいい, すてきな"}, {"en": "fine", "ja": "[形] ①天気のよい, 晴れた ②元気な ③すばらしい, きれいな"}, {"en": "this", "ja": "[形] [この, 次の, 現在の] [代] これは [が, を]"}, {"en": "rainy", "ja": "[形] 雨降りの, 雨の多い"}, {"en": "bright", "ja": "[形] ①明るい, 輝いている ②色のよい"}, {"en": "clear", "ja": "[形] ①晴れた ②明らかな [動] 〜をかたづける"}, {"en": "local", "ja": "[形] 地元の, 現地の"}, {"en": "next", "ja": "[形] ①次の ②Aの隣の [副] 次に"}, {"en": "great", "ja": "[形] 偉大な, 大きな, すばらしい"}, {"en": "southern", "ja": "[形] 南の, 南方の"}, {"en": "fantastic", "ja": "[形] すばらしい, すてきな"}, {"en": "popular", "ja": "[形] 人気のある, 大衆的な, 通俗的な"}, {"en": "always", "ja": "[副] いつも, 常に"}, {"en": "home", "ja": "[副] 家に, 自宅へ, 故郷へ [名] 家, 自宅, 故郷"}, {"en": "off", "ja": "[副] 離れて"}, {"en": "why", "ja": "[副] なぜ, どうして"}, {"en": "never", "ja": "[副] 決して〜ない, 一度も〜ない"}, {"en": "so", "ja": "[副] とても, それほど, 〜で [接] だから, それで"}, {"en": "there", "ja": "[副] そこに, そこで"}, {"en": "far", "ja": "[副] 遠くに [へ], はるかに [形] 遠い"}, {"en": "away", "ja": "[副] 離れて, 去って"}, {"en": "overseas", "ja": "[副] 海外に, 外国に [形] 海外の, 外国の"}, {"en": "abroad", "ja": "[副] 海外に [へ, で], 外国に [へ, で]"}, {"en": "later", "ja": "[副] あとで, 後に"}, {"en": "someday", "ja": "[副] (未来の) いつか, そのうち"}, {"en": "piano", "ja": "[名] ピアノ"}, {"en": "violin", "ja": "[名] ヴァイオリン"}, {"en": "guitar", "ja": "[名] ギター"}, {"en": "drum", "ja": "[名] ドラム (ス) ；太鼓"}, {"en": "flute", "ja": "[名] フルート"}, {"en": "trumpet", "ja": "[名] トランペット"}, {"en": "song", "ja": "[名] 歌"}, {"en": "painting", "ja": "[名] 絵"}, {"en": "pet", "ja": "[名] ペット"}, {"en": "animal", "ja": "[名] 動物"}, {"en": "bird", "ja": "[名] 鳥"}, {"en": "dog", "ja": "[名] イヌ"}, {"en": "cat", "ja": "[名] ネコ"}, {"en": "mouse", "ja": "[名] ネズミ, ハツカネズミ"}, {"en": "monkey", "ja": "[名] サル"}, {"en": "bear", "ja": "[名] クマ"}, {"en": "horse", "ja": "[名] 馬"}, {"en": "lion", "ja": "[名] ライオン"}, {"en": "panda", "ja": "[名] パンダ"}, {"en": "tiger", "ja": "[名] トラ"}, {"en": "fox", "ja": "[名] キツネ"}, {"en": "pig", "ja": "[名] ブタ"}, {"en": "duck", "ja": "[名] カモ, アヒル"}, {"en": "cow", "ja": "[名] 雌牛, 乳牛；ウシ"}, {"en": "flower", "ja": "[名] 花"}, {"en": "garden", "ja": "[名] 庭"}, {"en": "rose", "ja": "[名] バラ"}, {"en": "color", "ja": "[名] 色"}, {"en": "cherry", "ja": "[名] ①桜 ②サクランボ"}, {"en": "tree", "ja": "[名] 木, 樹木"}, {"en": "look", "ja": "[動] ①じっと見る ②Aを見る ③ほら, いいかい"}, {"en": "feel", "ja": "[動] ①Cに感じる ②〜を感じる"}, {"en": "taste", "ja": "[動] Cな味がする [名] 味"}, {"en": "draw", "ja": "[動] ①(絵) を描く, (線) を引く ②〜を引く, 引っ張る"}, {"en": "cry", "ja": "[動] (声をあげて) 泣く, 叫ぶ, 大声で言う [名] 叫び声"}, {"en": "get", "ja": "[動] ①Cになる ②〜を手に入れる"}, {"en": "break", "ja": "[動] 〜を壊す, 割る, 破る [名] 休憩"}, {"en": "hear", "ja": "[動] 〜を聞く, 聞こえる"}, {"en": "send", "ja": "[動] 〜を送る"}, {"en": "try", "ja": "[動] Vしようとする, 試みる；〜を試す"}, {"en": "respect", "ja": "[動] (人) を尊敬する [名] 尊敬, 敬意"}, {"en": "believe", "ja": "[動] 〜を信じる, 〜だと思う"}, {"en": "keep", "ja": "[動] ①ずっとCのままである ②〜を保つ, 置いておく"}, {"en": "laugh", "ja": "[動] (声に出して) 笑う"}, {"en": "learn", "ja": "[動] 〜を学ぶ, 習得する；〜を知る"}, {"en": "warm", "ja": "[動] 〜を暖める [形] 暖かい"}, {"en": "occur", "ja": "[動] 起こる, 生じる"}, {"en": "prefer", "ja": "[動] 〜を好む, 〜が好きだ"}, {"en": "check", "ja": "[動] 〜を確認する, 調べる"}, {"en": "compare", "ja": "[動] 〜を比較する"}, {"en": "enter", "ja": "[動] (場所) に入る, (学校) に入学する"}, {"en": "appear", "ja": "[動] 現れる"}, {"en": "look", "ja": "[動] ①ほら, いいかい ②Aを見る ③Cに見える"}, {"en": "fall", "ja": "[動] 落ちる [名] 秋"}, {"en": "follow", "ja": "[動] ①〜について行く ②〜に従う, 〜を守る"}, {"en": "disappear", "ja": "[動] 消える, 姿を消す, 存在しなくなる"}, {"en": "communicate", "ja": "[動] 意思を伝える, 伝達する"}, {"en": "dig", "ja": "[動] 〜を掘る"}, {"en": "bury", "ja": "[動] 〜を埋める"}, {"en": "fight", "ja": "[動] 争う, 戦う；喧嘩する"}, {"en": "young", "ja": "[形] 若い"}, {"en": "pop", "ja": "[形] 流行の, ポップな"}, {"en": "right", "ja": "[形] ①よい, ふさわしい ②右の [副] ①正しく, ふさわしい ②右に [名] ①正しいこと ②権利 ③右"}, {"en": "western", "ja": "[形] 西洋の, 欧米の"}, {"en": "boring", "ja": "[形] 退屈な, (人を) 退屈させるような"}, {"en": "native", "ja": "[形] 出生地の, 母国の；ある場所に特有の"}, {"en": "special", "ja": "[形] 特別な"}, {"en": "front", "ja": "[形] [名] 正面 (の), 前方 (の)"}, {"en": "no", "ja": "[形] ひとつも〜ない, 少しも〜ない [副] いいえ, いや"}, {"en": "few", "ja": "[形] [代] ①少し (の), 2, 3 (の), 少数 (の) ②ほとんどない (もの), わずかし"}, {"en": "useful", "ja": "[形] 便利な, 役に立つ"}, {"en": "international", "ja": "[形] 国際的な"}, {"en": "difficult", "ja": "[形] むずかしい, 困難な"}, {"en": "each", "ja": "[形] それぞれの, 各〜 [副] [代] それぞれ"}, {"en": "loud", "ja": "[形] (音・声が) 大きい, うるさい [副] 大きな声で"}, {"en": "hard", "ja": "[形] ①むずかしい ②かたい [副] 一生懸命に"}, {"en": "bad", "ja": "[形] 悪い"}, {"en": "organic", "ja": "[形] 有機農法の, 有機栽培の"}, {"en": "fresh", "ja": "[形] 新鮮な, 新しい"}, {"en": "delicious", "ja": "[形] おいしい"}, {"en": "cold", "ja": "[形] 冷たい, 寒い [名] 寒さ；風邪"}, {"en": "plastic", "ja": "[形] [名] プラスチック (の)"}, {"en": "lovely", "ja": "[形] かわいい, 美しい, すばらしい"}, {"en": "expensive", "ja": "[形] 高価な, (値段が) 高い"}, {"en": "cheap", "ja": "[形] 安価な, (値段が) 安い"}, {"en": "another", "ja": "[形] 別の, もうひとつの"}, {"en": "wonderful", "ja": "[形] (驚くほど) すばらしい, すてきな"}, {"en": "low", "ja": "[形] (高さ・速度などが) 低い, (値段が) 安い"}, {"en": "perfect", "ja": "[形] 完全な, 申し分のない, すばらしい"}, {"en": "sad", "ja": "[形] 悲しい"}, {"en": "blossom", "ja": "[名] 花"}, {"en": "body", "ja": "[名] 身体, 肉体"}, {"en": "hair", "ja": "[名] 髪, 髪の毛"}, {"en": "face", "ja": "[名] 顔 [動] 〜に直面する"}, {"en": "mouth", "ja": "[名] 口"}, {"en": "ear", "ja": "[名] 耳"}, {"en": "head", "ja": "[名] 頭"}, {"en": "neck", "ja": "[名] 首"}, {"en": "eye", "ja": "[名] 目"}, {"en": "tooth", "ja": "[名] 歯"}, {"en": "nose", "ja": "[名] 鼻"}, {"en": "leg", "ja": "[名] (人・動物の) 脚；(いすなどの) 脚"}, {"en": "hand", "ja": "[名] 手 [動] 〜を手渡す"}, {"en": "arm", "ja": "[名] 腕"}, {"en": "finger", "ja": "[名] (手の) 指"}, {"en": "shoulder", "ja": "[名] 肩"}, {"en": "foot", "ja": "[名] ①足 ②フィート ③(山の) ふもと"}, {"en": "baby", "ja": "[名] 赤ん坊"}, {"en": "smile", "ja": "[名] ほほえみ, 笑顔 [動] ほほえむ, 微笑する"}, {"en": "coffee", "ja": "[名] コーヒー"}, {"en": "toast", "ja": "[名] トースト"}, {"en": "breakfast", "ja": "[名] 朝食"}, {"en": "lunch", "ja": "[名] 昼食"}, {"en": "kitchen", "ja": "[名] 台所, キッチン"}, {"en": "dinner", "ja": "[名] 夕食"}, {"en": "pizza", "ja": "[名] ピザ"}, {"en": "food", "ja": "[名] 食べ物"}, {"en": "beef", "ja": "[名] 牛肉, ビーフ"}, {"en": "chicken", "ja": "[名] ①鶏肉, チキン ②ニワトリ (のひよこ)"}, {"en": "tea", "ja": "[名] 茶, 紅茶"}, {"en": "die", "ja": "[動] 死ぬ"}, {"en": "explode", "ja": "[動] 爆発する"}, {"en": "kill", "ja": "[動] 〜を殺す, 死なせる"}, {"en": "pass", "ja": "[動] ①〜を手渡す, 回す ②(時などが) 過ぎ去る, たつ"}, {"en": "fry", "ja": "[動] 焼く, いためる, 油で揚げる"}, {"en": "boil", "ja": "[動] 〜を沸かす, ゆでる, 煮る；沸騰する"}, {"en": "scramble", "ja": "[動] 〜をかきまぜる"}, {"en": "smell", "ja": "[動] Cのにおいがする；(〜を) におう [名] におい"}, {"en": "add", "ja": "[動] 〜を加える, 足す"}, {"en": "serve", "ja": "[動] (飲食物) を出す [名] (テニスなどの) サーブ"}, {"en": "grill", "ja": "[動] (肉など) を網焼きにする, 〜をバーベキューにする"}, {"en": "include", "ja": "[動] 〜を含む, 含んでいる"}, {"en": "hate", "ja": "[動] 〜をひどく嫌う, 〜が大嫌いだ [名] 憎悪, 嫌悪"}, {"en": "mix", "ja": "[動] 〜を混ぜる；混じる"}, {"en": "marry", "ja": "[動] (人) と結婚する"}, {"en": "unite", "ja": "[動] 〜を結合する, 合体する"}, {"en": "arrive", "ja": "[動] 到着する, 着く"}, {"en": "camp", "ja": "[動] キャンプする, 野営する [名] キャンプ場"}, {"en": "pass", "ja": "[動] ①(時などが) 過ぎ去る, たつ ②〜を手渡す, 回す"}, {"en": "gather", "ja": "[動] 集まる；(情報・食料など) を集める"}, {"en": "cross", "ja": "[動] 〜を横切る；横断する [名] 十字架"}, {"en": "turn", "ja": "[動] 曲がる, 向く；〜の向きを変える, 向ける [名] 順番"}, {"en": "approach", "ja": "[動] (〜に) 近づく, 接近する"}, {"en": "make", "ja": "[動] ①CをCにする ②〜を作る"}, {"en": "encourage", "ja": "[動] 〜を励ます"}, {"en": "ask", "ja": "[動] ①(人) に頼む ②(人) にたずねる, (〜を) たずねる"}, {"en": "relax", "ja": "[動] 〜をくつろがせる；くつろぐ, リラックスする"}, {"en": "seem", "ja": "[動] ①Vするように思われる ②〜のように思える, 〜に見える"}, {"en": "fill", "ja": "[動] 〜を満たす"}, {"en": "refuse", "ja": "[動] 断る, 拒否する, 拒絶する"}, {"en": "wrong", "ja": "[形] ①具合が悪い, 故障して ②間違った, 誤った"}, {"en": "sugar", "ja": "[名] 砂糖"}, {"en": "sleepy", "ja": "[形] 眠い"}, {"en": "clear", "ja": "[形] ①明らかな ②晴れた [動] 〜をかたづける"}, {"en": "sweet", "ja": "[形] 甘い"}, {"en": "free", "ja": "[形] 自由な, ひまな"}, {"en": "excited", "ja": "[形] (人が) 興奮している, わくわくしている"}, {"en": "angry", "ja": "[形] 怒っている, 腹を立てて"}, {"en": "glad", "ja": "[形] (人が) うれしい"}, {"en": "surprised", "ja": "[形] (人が) 驚いている"}, {"en": "kind", "ja": "[形] 親切な, やさしい"}, {"en": "other", "ja": "[形] 他の, 別の [代] 他のもの；他人, 他の人たち"}, {"en": "interested", "ja": "[形] (人が) 興味を持っている"}, {"en": "honest", "ja": "[形] 正直な"}, {"en": "sacred", "ja": "[形] 神聖な"}, {"en": "silent", "ja": "[形] 静かな, 沈黙の"}, {"en": "human", "ja": "[形] 人間の [名] 人間"}, {"en": "tall", "ja": "[形] 背が高い, (建物などが) 高い"}, {"en": "heavy", "ja": "[形] 重い"}, {"en": "either", "ja": "[副] ①〜もまた (ない) ②Aか何か"}, {"en": "quickly", "ja": "[副] すばやく, 急いで, すぐに"}, {"en": "just", "ja": "[副] ①ちょうど, ちょうどき (〜したばかり) ②ちょっと, ただ"}, {"en": "then", "ja": "[副] そのとき (に), それから；そうすると"}, {"en": "tonight", "ja": "[副] [名] 今夜 (は)"}, {"en": "easily", "ja": "[副] かんたんに, 容易に"}, {"en": "certainly", "ja": "[副] ①もちろん, その通り ②確かに, 疑いなく"}, {"en": "completely", "ja": "[副] 完全に, すっかり"}, {"en": "too", "ja": "[副] ①あまりにも, 〜すぎ ②〜もまた, 同様に"}, {"en": "simply", "ja": "[副] 単に"}, {"en": "finally", "ja": "[副] ①ついに, やっと ②最後に"}, {"en": "milk", "ja": "[名] ミルク, 牛乳"}, {"en": "sugar", "ja": "[名] 砂糖"}, {"en": "onion", "ja": "[名] タマネギ"}, {"en": "carrot", "ja": "[名] ニンジン"}, {"en": "potato", "ja": "[名] ジャガイモ"}, {"en": "curry", "ja": "[名] カレー"}, {"en": "rice", "ja": "[名] 米, ごはん"}, {"en": "hamburger", "ja": "[名] ハンバーガー"}, {"en": "fish", "ja": "[名] 魚, 魚肉"}, {"en": "meat", "ja": "[名] 肉"}, {"en": "bread", "ja": "[名] パン"}, {"en": "butter", "ja": "[名] バター"}, {"en": "cheese", "ja": "[名] チーズ"}, {"en": "egg", "ja": "[名] 卵"}, {"en": "noodle", "ja": "[名] ヌードル, めん類, パスタ"}, {"en": "apple", "ja": "[名] リンゴ"}, {"en": "banana", "ja": "[名] バナナ"}, {"en": "orange", "ja": "[名] ①オレンジ ②オレンジ色 (の)"}, {"en": "grape", "ja": "[名] ブドウ, グレープ"}, {"en": "melon", "ja": "[名] メロン"}, {"en": "cup", "ja": "[名] (コーヒー・紅茶用の) カップ"}, {"en": "water", "ja": "[名] 水"}, {"en": "bottle", "ja": "[名] 瓶"}, {"en": "oil", "ja": "[名] 油"}, {"en": "fire", "ja": "[名] 火, 火災；火事"}, {"en": "dish", "ja": "[名] ①食器類 ②大皿 ③(皿に盛った) 料理"}, {"en": "letter", "ja": "[名] 手紙"}, {"en": "work", "ja": "[名] ①仕事, 職場；勉強 ②作品 [動] ①働く, 勉強する ②機能する"}, {"en": "umbrella", "ja": "[名] 傘"}, {"en": "bus", "ja": "[名] バス"}, {"en": "accept", "ja": "[動] 〜を受け入れる"}, {"en": "preserve", "ja": "[動] 〜を保護する, 保つ, 守る, 保存する"}, {"en": "protect", "ja": "[動] 〜を保護する, 守る"}, {"en": "burn", "ja": "[動] 〜を燃やす, 焼く；燃える"}, {"en": "recycle", "ja": "[動] (廃品など) を再生利用する, リサイクルする"}, {"en": "reduce", "ja": "[動] 〜を小さくする, 下げる, 減らす"}, {"en": "collect", "ja": "[動] 〜を集める, 収集する"}, {"en": "shoot", "ja": "[動] 〜を撃つ, 射撃する ②シュートする"}, {"en": "find", "ja": "[動] ①〜とわかる, 〜と思う ②〜を見つける"}, {"en": "lay", "ja": "[動] ① (卵) を産む ②〜を置く, 横たえる"}, {"en": "lie", "ja": "[動] ①横たわる, ある ②うそをつく [名] うそ"}, {"en": "wake", "ja": "[動] 〜を起こす；目を覚ます"}, {"en": "fix", "ja": "[動] ①〜を修理する ②〜を固定する"}, {"en": "shout", "ja": "[動] 叫ぶ, 大声をだす, どなる"}, {"en": "ride", "ja": "[動] (自転車・馬など) に乗る, 乗って行く"}, {"en": "cover", "ja": "[動] (〜を) おおう, (カバーなどを) かける [名] おおい, カバー"}, {"en": "design", "ja": "[動] 〜を設計する"}, {"en": "name", "ja": "[動] 〜を名づける [名] 名前"}, {"en": "carry", "ja": "[動] 〜を運ぶ, 持っていく"}, {"en": "wonder", "ja": "[動] 〜かと (疑問に) 思う"}, {"en": "realize", "ja": "[動] ①〜に気づく, 〜をさとる, よくわかる ②〜を実現する"}, {"en": "spend", "ja": "[動] (時間・お金) を費やす, 使う, かける"}, {"en": "save", "ja": "[動] ①〜を蓄える, 節約する ②〜を救う, 助ける, 守る"}, {"en": "notice", "ja": "[動] 〜に気づく, 〜とわかる"}, {"en": "exchange", "ja": "[動] 〜を交換する, 両替する"}, {"en": "sound", "ja": "[動] Cに聞こえる, 思える [名] 音, 響き"}, {"en": "leave", "ja": "[動] ①〜を残す, 置いておく ②〜を去る ③出発する"}, {"en": "introduce", "ja": "[動] 〜を紹介する；〜を導入する, 輸入する"}, {"en": "invent", "ja": "[動] 〜を発明する, 考案する"}, {"en": "produce", "ja": "[動] 〜を生産する"}, {"en": "still", "ja": "[副] 今でも, 今なお ②まだ, それでも"}, {"en": "global", "ja": "[形] 地球の, 地球規模の"}, {"en": "worse", "ja": "[形] より悪い [副] より悪く"}, {"en": "any", "ja": "[形] ①どんな〜も ②いくつかの, 何か, どれか ③少しも (〜ない)"}, {"en": "most", "ja": "[形] [副] [名] ①最も多く (のもの,人) ；最も〜 ②大部分 (の), たいてい (の人, もの)"}, {"en": "important", "ja": "[形] 重要な, 大事な, 大切な"}, {"en": "best", "ja": "[形] 最良の [副] 最もよく [名] 最善"}, {"en": "worst", "ja": "[形] 最悪の [副] 最も悪く [名] 最悪"}, {"en": "whole", "ja": "[形] 全体の, すべての, 全〜"}, {"en": "normal", "ja": "[形] ふつうの, 正常な, 標準の"}, {"en": "living", "ja": "[形] 生きている, 現存する"}, {"en": "famous", "ja": "[形] 有名な, 名高い, 知られている"}, {"en": "last", "ja": "[形] ①最後の ②この前の [副] 最後に [名] 最後 [動] 続く"}, {"en": "endangered", "ja": "[形] 絶滅の危機にひんしている"}, {"en": "full", "ja": "[形] ①いっぱいの, 満ちた ②満腹している"}, {"en": "dead", "ja": "[形] 死んだ, 死んでいる"}, {"en": "huge", "ja": "[形] 巨大な, ばくだいな"}, {"en": "empty", "ja": "[形] 空いている, 誰もいない, 空の"}, {"en": "short", "ja": "[形] 短い"}, {"en": "different", "ja": "[形] 違った, 異なった, 別の"}, {"en": "full", "ja": "[形] ①満員している ②いっぱいの, 満ちた"}, {"en": "ready", "ja": "[形] (人・物が) 用意 [準備] ができている"}, {"en": "well-balanced", "ja": "[形] バランスの取れた, 健康に良い"}, {"en": "better", "ja": "[副] よりよく"}, {"en": "now", "ja": "[副] ①さて, さあ ②今 (では), 現在"}, {"en": "below", "ja": "[副] 下に [の"}, {"en": "quietly", "ja": "[副] 静かに"}, {"en": "suddenly", "ja": "[副] 突然"}, {"en": "deep", "ja": "[副] 深く [形] 深い"}, {"en": "else", "ja": "[副] 他に, その他"}, {"en": "truck", "ja": "[名] トラック"}, {"en": "train", "ja": "[名] 電車, 列車 [動] (〜を) 訓練する"}, {"en": "boat", "ja": "[名] ボート, 船"}, {"en": "ship", "ja": "[名] 船"}, {"en": "taxi", "ja": "[名] タクシー"}, {"en": "park", "ja": "[名] 公園 [動] (車・自転車) を駐車する"}, {"en": "kilometer", "ja": "[名] キロメートル"}, {"en": "hotel", "ja": "[名] ホテル"}, {"en": "way", "ja": "[名] ①道 ②方法, やり方"}, {"en": "beach", "ja": "[名] 砂浜"}, {"en": "street", "ja": "[名] 道, 街路"}, {"en": "place", "ja": "[名] 場所；位置, 地位 [動] 〜を置く"}, {"en": "mountain", "ja": "[名] 山"}, {"en": "weekend", "ja": "[名] 週末"}, {"en": "sun", "ja": "[名] 太陽"}, {"en": "north", "ja": "[名] 北"}, {"en": "south", "ja": "[名] 南"}, {"en": "east", "ja": "[名] 東"}, {"en": "west", "ja": "[名] 西"}, {"en": "town", "ja": "[名] ①町 ②繁華街"}, {"en": "river", "ja": "[名] 川"}, {"en": "job", "ja": "[名] 仕事, 職, 勤め口"}, {"en": "college", "ja": "[名] 大学"}, {"en": "room", "ja": "[名] 部屋"}, {"en": "newspaper", "ja": "[名] 新聞"}, {"en": "desk", "ja": "[名] (勤務・勉強用の) 机"}, {"en": "TV", "ja": "[名] テレビ (放送)"}, {"en": "movie", "ja": "[名] 映画"}, {"en": "homework", "ja": "[名] 宿題"}, {"en": "dream", "ja": "[名] 夢；願望 [動] 夢を見る"}, {"en": "increase", "ja": "[動] 増える；〜を増やす [名] 増加"}, {"en": "develop", "ja": "[動] 〜を開発する, 発達させる"}, {"en": "connect", "ja": "[動] 〜をつなぐ, 結びつける"}, {"en": "express", "ja": "[動] 〜を表現する"}, {"en": "prepare", "ja": "[動] 準備をする, 備える；〜を用意する"}, {"en": "begin", "ja": "[動] 〜を始める；始まる"}, {"en": "impress", "ja": "[動] 〜に感銘を与える"}, {"en": "perform", "ja": "[動] 演じる, 演奏する；(芸など) をする, 〜を行う"}, {"en": "injure", "ja": "[動] 〜を傷つける, 痛める"}, {"en": "cheer", "ja": "[動] 声援を送る, 応援する [名] 〜を応援"}, {"en": "hold", "ja": "[動] ①(会など) を開く ②〜を持つ, 抱く, 保つ"}, {"en": "invite", "ja": "[動] 〜を招く, 招待する"}, {"en": "offer", "ja": "[動] 〜を提供する, 与える, 申し出る [名] 申し出, 提案"}, {"en": "graduate", "ja": "[動] 卒業する"}, {"en": "continue", "ja": "[動] (〜を) 続ける"}, {"en": "borrow", "ja": "[動] 〜を借りる"}, {"en": "shock", "ja": "[動] 〜をぎょっとさせる, 〜にショックを与える [名] 衝撃, ショック"}, {"en": "support", "ja": "[動] 〜を支持する, 支援する [名] 支持, 支援"}, {"en": "save", "ja": "[動] ①〜を救う, 助ける, 守る ②〜を蓄える, 節約する"}, {"en": "survive", "ja": "[動] 生き残る"}, {"en": "solve", "ja": "[動] 〜を解決する, 解く"}, {"en": "face", "ja": "[動] 〜に直面する [名] 顔"}, {"en": "promise", "ja": "[動] (〜を) 約束する"}, {"en": "discover", "ja": "[動] 〜を発見する"}, {"en": "decide", "ja": "[動] 〜を決める"}, {"en": "throw", "ja": "[動] (〜を) 投げる"}, {"en": "act", "ja": "[動] 行動する, 実行する [名] 行動, 行為"}, {"en": "imagine", "ja": "[動] 〜を想像する"}, {"en": "last", "ja": "[動] 続く [形] ①この前の ②最後の [副] 最後に [名] 最後"}, {"en": "miss", "ja": "[動] ①〜がいなくてさびしく思う ②〜を見逃す, (電車など) に乗り遅れる"}, {"en": "also", "ja": "[副] 〜もまた, また"}, {"en": "surprising", "ja": "[形] (人を) 驚かすような, 驚くべき"}, {"en": "several", "ja": "[形] いくつかの"}, {"en": "afraid", "ja": "[形] こわがる, 恐れる"}, {"en": "direct", "ja": "[形] 直接の [動] 監督する, 演出する"}, {"en": "safe", "ja": "[形] 安全な"}, {"en": "dangerous", "ja": "[形] 危険な, あぶない"}, {"en": "nervous", "ja": "[形] ①不安な, 緊張して, 神経質な ②神経の"}, {"en": "funny", "ja": "[形] おもしろい, おかしい, 奇妙な"}, {"en": "strange", "ja": "[形] 変な, 奇妙な, 不思議な, 未知の"}, {"en": "cute", "ja": "[形] かわいい"}, {"en": "lucky", "ja": "[形] 幸運な, 運がいい"}, {"en": "close", "ja": "[形] [副] 接近した, 親しい；近くに, 接近して [動] 〜を閉める, 閉まる"}, {"en": "serious", "ja": "[形] 深刻な, 重大な；まじめな"}, {"en": "round", "ja": "[形] 丸い"}, {"en": "necessary", "ja": "[形] 必要な"}, {"en": "impossible", "ja": "[形] 不可能な"}, {"en": "solar", "ja": "[形] 太陽の"}, {"en": "wild", "ja": "[形] 野生の, 荒れた；野蛮な, 未開の"}, {"en": "broken", "ja": "[形] 壊れた, 割れた"}, {"en": "comfortable", "ja": "[形] 快適な, 心地よい"}, {"en": "light", "ja": "[形] 軽い；明るい [名] 光, 明かり"}, {"en": "daily", "ja": "[形] 毎日の"}, {"en": "just", "ja": "[副] ①ちょっと, ただ ②ちょうど, ちょうどき (〜したばかり)"}, {"en": "ever", "ja": "[副] これまで, 今まで, かつて"}, {"en": "yet", "ja": "[副] ①まだ (〜しない) ②もう, すでに"}, {"en": "already", "ja": "[副] すでに, もう"}, {"en": "left", "ja": "[副] 左へ, 左の方に [形] 左の [名] 左"}, {"en": "straight", "ja": "[副] まっすぐに [形] まっすぐな, 一直線の"}, {"en": "alone", "ja": "[副] ひとりで"}, {"en": "bath", "ja": "[名] 風呂"}, {"en": "chair", "ja": "[名] いす"}, {"en": "center", "ja": "[名] 中心, 中央"}, {"en": "city", "ja": "[名] 市, 都市"}, {"en": "fun", "ja": "[名] おもしろいこと, 楽しさ"}, {"en": "party", "ja": "[名] パーティー"}, {"en": "shopping", "ja": "[名] 買い物"}, {"en": "store", "ja": "[名] 店"}, {"en": "thing", "ja": "[名] もの, こと"}, {"en": "market", "ja": "[名] 市場, マーケット；取引"}, {"en": "shirt", "ja": "[名] シャツ"}, {"en": "tie", "ja": "[名] ネクタイ [動] 〜を結ぶ, つなぐ"}, {"en": "jacket", "ja": "[名] 上着, ジャケット"}, {"en": "cap", "ja": "[名] ① (ふちのない) 帽子 ② (ビンなどの) ふた"}, {"en": "hat", "ja": "[名] (ふちのある) 帽子"}, {"en": "belt", "ja": "[名] ベルト, 帯"}, {"en": "shoe", "ja": "[名] 靴"}, {"en": "glasses", "ja": "[名] めがね"}, {"en": "pants", "ja": "[名] ズボン, パンツ"}, {"en": "gate", "ja": "[名] 門, 門扉"}, {"en": "back", "ja": "[名] 後ろ, 背格；裏 [副] 後ろに, 元に"}, {"en": "schoolyard", "ja": "[名] 校庭"}, {"en": "library", "ja": "[名] 図書館, 書斎, 書庫"}, {"en": "subject", "ja": "[名] ①教科, 学科, 科目 ②主題, テーマ"}, {"en": "exam", "ja": "[名] 試験"}, {"en": "uniform", "ja": "[名] 制服, ユニフォーム"}, {"en": "speech", "ja": "[名] 演説, スピーチ"}, {"en": "weather", "ja": "[名] 天気"}, {"en": "snow", "ja": "[名] 雪 [動] 雪が降る"}, {"en": "sky", "ja": "[名] 空"}, {"en": "spread", "ja": "[動] 〜を広げる"}, {"en": "feed", "ja": "[動] (動物に) えさを与える, 〜を飼う"}, {"en": "attack", "ja": "[動] 〜を攻撃する [名] 攻撃"}, {"en": "bark", "ja": "[動] ほえる"}, {"en": "bite", "ja": "[動] 噛む"}, {"en": "create", "ja": "[動] 〜を作る, 創造する"}, {"en": "organize", "ja": "[動] ① (行事・活動など) を催す, 手配する ②〜を組織する, 系統立てる"}, {"en": "lend", "ja": "[動] 〜を貸す"}, {"en": "allow", "ja": "[動] 〜を許す"}, {"en": "fail", "ja": "[動] (試験) で不合格になる；失敗する"}, {"en": "review", "ja": "[動] 〜を復習する [名] 復習"}, {"en": "shake", "ja": "[動] 〜を振る, 揺さぶる"}, {"en": "launch", "ja": "[動] (ロケットなど) を打ち上げる；(事業など) を始める"}, {"en": "complain", "ja": "[動] 不満を言う, 文句を言う, 不平を言う"}, {"en": "remove", "ja": "[動] 〜を取り外す, 取り除く, (食卓の皿など) を片付ける"}, {"en": "depend", "ja": "[動] 依存する, 頼る"}, {"en": "pull", "ja": "[動] 〜を引く, 引っ張る"}, {"en": "scare", "ja": "[動] 〜をこわがらせる"}, {"en": "pay", "ja": "[動] 支払う；支払う"}, {"en": "suffer", "ja": "[動] 苦しむ, 悩む；〜を経験する"}, {"en": "trust", "ja": "[動] 〜を信頼する, 信用する [名] 信頼, 信用"}, {"en": "tie", "ja": "[動] 〜を結ぶ, つなぐ [名] ネクタイ"}, {"en": "decorate", "ja": "[動] 〜を飾る"}, {"en": "repair", "ja": "[動] 〜を修理する"}, {"en": "display", "ja": "[動] 〜を示す, 見せる [名] ①陳列, 展示 ② (コンピュータの) ディスプレイ"}, {"en": "fold", "ja": "[動] 〜をたたむ, 折る"}, {"en": "hang", "ja": "[動] 〜をつるす, かけて飾る"}, {"en": "expect", "ja": "[動] 〜を期待する, 予期する"}, {"en": "shine", "ja": "[動] 光る, 輝く, 照る"}, {"en": "actually", "ja": "[副] (予想と違って) 実際は, 現実に"}, {"en": "less", "ja": "[形] より少ない [副] より少なく"}, {"en": "sure", "ja": "[形] 確信している, 信じている [副] いいとも, その通り"}, {"en": "blind", "ja": "[形] 目が見えない, 視覚障害者の"}, {"en": "powerful", "ja": "[形] 強力な, 力強い"}, {"en": "electric", "ja": "[形] 電気の, 電動の"}, {"en": "digital", "ja": "[形] デジタルの, コンピュータの [名] デジタル"}, {"en": "various", "ja": "[形] いろいろな, さまざまな"}, {"en": "possible", "ja": "[形] 可能な, 起こりうる"}, {"en": "own", "ja": "[形] 自身の, 独自の"}, {"en": "atomic", "ja": "[形] 原子 (力) の"}, {"en": "professional", "ja": "[形] プロの [名] プロ, 職業人, 専門家"}, {"en": "friendly", "ja": "[形] やさしい, 親切な, 好意的な"}, {"en": "main", "ja": "[形] 主要な, 主な, 重大な"}, {"en": "major", "ja": "[形] 大きな, 重要な, 一流の"}, {"en": "such", "ja": "[形] このような, こういう"}, {"en": "clever", "ja": "[形] かしこい, 利口な"}, {"en": "TRUE", "ja": "[形] 本当の, 真実の, 本物の"}, {"en": "simple", "ja": "[形] かんたんな, 単純な, わかりやすい"}, {"en": "natural", "ja": "[形] 自然の, 当然の"}, {"en": "forward", "ja": "[副] 前へ [に], 前方に"}, {"en": "out", "ja": "[副] ①不在で ②外に ③すっかり ④消えて"}, {"en": "clearly", "ja": "[副] はっきりと, 明らかに"}, {"en": "especially", "ja": "[副] 特に, 特別に, とりわけ"}, {"en": "nearly", "ja": "[副] ほとんど, ほぼ, もう少しで"}, {"en": "maybe", "ja": "[副] ひょっとすると, ことによると, おそらく"}, {"en": "however", "ja": "[副] しかし, けれども"}, {"en": "almost", "ja": "[副] ほとんど, ほぼ, もう少しで"}, {"en": "still", "ja": "[副] ①まだ, それでも ②今でも, 今なお"}, {"en": "even", "ja": "[副] 〜さえ, 〜すら, たとえ〜でも"}, {"en": "wind", "ja": "[名] 風"}, {"en": "energy", "ja": "[名] エネルギー"}, {"en": "electricity", "ja": "[名] 電気"}, {"en": "moon", "ja": "[名] 月"}, {"en": "cloud", "ja": "[名] 雲"}, {"en": "earth", "ja": "[名] 地球"}, {"en": "road", "ja": "[名] 道, 道路"}, {"en": "tourist", "ja": "[名] 観光客, 旅行者"}, {"en": "man", "ja": "[名] 男"}, {"en": "woman", "ja": "[名] 女"}, {"en": "hometown", "ja": "[名] 故郷"}, {"en": "plane", "ja": "[名] 飛行機"}, {"en": "rainbow", "ja": "[名] 虹"}, {"en": "world", "ja": "[名] 世界"}, {"en": "custom", "ja": "[名] 習慣, 慣習"}, {"en": "vacation", "ja": "[名] 休暇, 休日"}, {"en": "experience", "ja": "[名] 経験, 体験 [動] 〜を経験する, 体験する"}, {"en": "airport", "ja": "[名] 空港"}, {"en": "can", "ja": "[名] 缶"}, {"en": "noon", "ja": "[名] 正午"}, {"en": "museum", "ja": "[名] 博物館, 美術館"}, {"en": "subway", "ja": "[名] 地下鉄"}, {"en": "station", "ja": "[名] ①駅 ②局, 署, 所"}, {"en": "line", "ja": "[名] 線；(鉄道などの) 路線"}, {"en": "top", "ja": "[名] 頂上, 頂"}, {"en": "hill", "ja": "[名] 丘, 坂"}, {"en": "uncle", "ja": "[名] おじ"}, {"en": "trip", "ja": "[名] 旅行, 移動"}, {"en": "aunt", "ja": "[名] おば"}, {"en": "cousin", "ja": "[名] いとこ"}, {"en": "steal", "ja": "[動] 〜を盗む"}, {"en": "hide", "ja": "[動] 〜を隠す"}, {"en": "guess", "ja": "[動] (〜だと) 推量 [推測] する, 〜と思う；(〜を) 推測する"}, {"en": "wish", "ja": "[動] 〜を願う, 〜であればいいのに [名] 願い, 望み (のもの)"}, {"en": "succeed", "ja": "[動] 成功する"}, {"en": "fit", "ja": "[動] 〜にぴったり合う, 適合する"}, {"en": "turn", "ja": "[動] ① (ある状態・色) になる ②〜の向きを変える, 向ける, 曲がる, 向く [名] 順番"}, {"en": "calm", "ja": "[動] 落ち着く；〜を鎮める, 落ち着かせる, なだめる"}, {"en": "overcome", "ja": "[動] 〜を克服する, 〜に打ち勝つ"}, {"en": "remind", "ja": "[動] (人) にAを思い出させる"}, {"en": "earn", "ja": "[動] 〜を稼ぐ, 得る"}, {"en": "improve", "ja": "[動] 〜を改良する, 改善する"}, {"en": "download", "ja": "[動] 〜をダウンロードする [名] ダウンロード"}, {"en": "pack", "ja": "[動] (荷物など) を詰める；詰める [名] パック, 箱"}, {"en": "hear of C", "ja": "[動] OがCなのが聞こえる"}, {"en": "shut", "ja": "[動] 〜を閉める, 閉じる；閉まる"}, {"en": "probably", "ja": "[副] おそらく, たぶん, 十中八九"}, {"en": "rich", "ja": "[形] 豊かな, 裕福な"}, {"en": "poor", "ja": "[形] 貧しい, 貧乏な"}, {"en": "equal", "ja": "[形] 等しい, 平等な, 匹敵する"}, {"en": "proud", "ja": "[形] 誇りを持っている"}, {"en": "few", "ja": "[形] [代] ①ほとんどない (もの), わずかしかない (もの) ②少し (の), 2, 3 (の), 少数 (の)"}, {"en": "elderly", "ja": "[形] 高齢の"}, {"en": "ill", "ja": "[形] 病気の, 重い"}, {"en": "real", "ja": "[形] 本当の, 真の, 本物の；現実の, 実際の"}, {"en": "terrible", "ja": "[形] ひどい, 猛烈な"}, {"en": "everyday", "ja": "[形] 日常の, 毎日の"}, {"en": "smart", "ja": "[形] かしこい, 利口な；しゃれた, きちんとした"}, {"en": "same", "ja": "[形] [代] 同じ (もの), 同じ (こと)"}, {"en": "dark", "ja": "[形] 暗い"}, {"en": "dirty", "ja": "[形] 汚い"}, {"en": "dry", "ja": "[形] 乾いた"}, {"en": "wet", "ja": "[形] しめった, ぬれた"}, {"en": "similar", "ja": "[形] 同じような"}, {"en": "fat", "ja": "[形] 太った"}, {"en": "active", "ja": "[形] 活動的な"}, {"en": "traditional", "ja": "[形] 伝統的な, しきたりの"}, {"en": "fascinating", "ja": "[形] 魅力的な, うっとりさせる"}, {"en": "either", "ja": "[副] ①AかBか ②〜もまた (ない)"}, {"en": "both", "ja": "[副] [形] 両方の, 両方とも [名] 両方"}, {"en": "perhaps", "ja": "[副] ことによると, ひょっとしたら"}, {"en": "nearby", "ja": "[副] [形] 近くの [に"}, {"en": "recently", "ja": "[副] 最近, ついこのあいだ"}, {"en": "everywhere", "ja": "[副] どこにも, どこへも, いたるところで"}, {"en": "forever", "ja": "[副] 永久に, 永遠に"}, {"en": "sincerely", "ja": "[副] 心から, 誠実に"}, {"en": "scientist", "ja": "[名] 科学者"}, {"en": "part", "ja": "[名] 部分, 一部"}, {"en": "Africa", "ja": "[名] アフリカ"}, {"en": "Asia", "ja": "[名] アジア"}, {"en": "Europe", "ja": "[名] ヨーロッパ"}, {"en": "France", "ja": "[名] フランス"}, {"en": "Germany", "ja": "[名] ドイツ"}, {"en": "Holland", "ja": "[名] オランダ"}, {"en": "Italy", "ja": "[名] イタリア"}, {"en": "Spain", "ja": "[名] スペイン"}, {"en": "England", "ja": "[名] イングランド"}, {"en": "Scotland", "ja": "[名] スコットランド"}, {"en": "Ireland", "ja": "[名] アイルランド"}, {"en": "Wales", "ja": "[名] ウェールズ"}, {"en": "concert", "ja": "[名] コンサート"}, {"en": "ticket", "ja": "[名] チケット, 切符"}, {"en": "adult", "ja": "[名] 大人, 成人 [形] 大人の"}, {"en": "child", "ja": "[名] 子ども"}, {"en": "musician", "ja": "[名] 音楽家"}, {"en": "pilot", "ja": "[名] パイロット"}, {"en": "future", "ja": "[名] 未来, 将来"}, {"en": "lesson", "ja": "[名] レッスン, 課, 授業"}, {"en": "actress", "ja": "[名] 女優"}, {"en": "lady", "ja": "[名] 婦人"}, {"en": "bridge", "ja": "[名] 橋"}, {"en": "culture", "ja": "[名] 文化"}, {"en": "tradition", "ja": "[名] 伝統"}, {"en": "comic", "ja": "[名] 漫画 (本) [形] 喜劇の, こっけいな"}, {"en": "story", "ja": "[名] ①話, 物語 ② (建物の) 階"}, {"en": "film", "ja": "[名] 映画, フィルム"}, {"en": "seldom", "ja": "[副] めったに〜ない"}, {"en": "excellent", "ja": "[形] すばらしい, 大変すぐれた"}, {"en": "latest", "ja": "[形] 最新の [名] 最新のもの"}, {"en": "successful", "ja": "[形] 成功している, 好結果の"}, {"en": "common", "ja": "[形] 共通の, 共有の"}, {"en": "strict", "ja": "[形] 厳しい, 厳格な"}, {"en": "wide", "ja": "[形] 幅広い"}, {"en": "amazing", "ja": "[形] (人・物・ことが) 驚くほどすばらしい, 見事だ；驚くべき"}, {"en": "lazy", "ja": "[形] なまけて, だらけて, のんびりした"}, {"en": "advanced", "ja": "[形] 上級の [的] 先導の"}, {"en": "lonely", "ja": "[形] 孤独な, ひとりぼっちの"}, {"en": "modern", "ja": "[形] 現代の"}, {"en": "shy", "ja": "[形] 内気な"}, {"en": "polite", "ja": "[形] ていねいな"}, {"en": "thick", "ja": "[形] 厚い, (コート, 本などが) 分厚い"}, {"en": "opposite", "ja": "[形] 反対の [名] 反対"}, {"en": "disappointed", "ja": "[形] (人) ががっかりしている"}, {"en": "ordinary", "ja": "[形] ふつうの, 通常の"}, {"en": "restaurant", "ja": "[名] レストラン, 料理店"}, {"en": "helpful", "ja": "[形] 役に立つ, 助けになる, 有益な"}, {"en": "senior", "ja": "[形] 高齢の, 上級の [名] 高齢者, 老人"}, {"en": "unique", "ja": "[形] 独特な"}, {"en": "colorful", "ja": "[形] 色彩豊かな, 派手な"}, {"en": "weak", "ja": "[形] 弱い"}, {"en": "crowded", "ja": "[形] 混雑した"}, {"en": "noisy", "ja": "[形] 騒がしい, やかましい"}, {"en": "public", "ja": "[形] 公共の, 公の"}, {"en": "ancient", "ja": "[形] 古代の"}, {"en": "rental", "ja": "[形] 賃貸の, レンタルの"}, {"en": "positive", "ja": "[形] 積極的な, 肯定的な"}, {"en": "badly", "ja": "[副] ①ひどく, とても ②下手に, まずく"}, {"en": "power", "ja": "[名] 力"}, {"en": "theater", "ja": "[名] 劇場"}, {"en": "drama", "ja": "[名] 劇, 戯曲, 演劇"}, {"en": "stage", "ja": "[名] ①舞台 ②段階"}, {"en": "image", "ja": "[名] イメージ, 印象, 像"}, {"en": "mind", "ja": "[名] 心, 精神 [動] 〜を嫌だと思う"}, {"en": "meaning", "ja": "[名] 意味"}, {"en": "sentence", "ja": "[名] 文"}, {"en": "program", "ja": "[名] 番組, 計画"}, {"en": "race", "ja": "[名] ①競走, レース, 競争, 争い ②人種"}, {"en": "Olympics", "ja": "[名] オリンピック"}, {"en": "window", "ja": "[名] 窓"}, {"en": "door", "ja": "[名] ドア, 戸, 扉, 玄関"}, {"en": "key", "ja": "[名] かぎ"}, {"en": "floor", "ja": "[名] 階, 床"}, {"en": "calendar", "ja": "[名] カレンダー"}, {"en": "bedroom", "ja": "[名] ベッドルーム, 寝室"}, {"en": "restaurant", "ja": "[名] レストラン, 料理店"}, {"en": "star", "ja": "[名] 星"}, {"en": "robot", "ja": "[名] ロボット"}, {"en": "stair", "ja": "[名] ①階段 ② (階段の) 一段"}, {"en": "trash", "ja": "[名] ゴミ, くず"}, {"en": "bathroom", "ja": "[名] 浴室, 風呂場；手洗い, トイレ"}, {"en": "clothes", "ja": "[名] 衣服, 身につけるもの"}, {"en": "life", "ja": "[名] 生活, 人生, 生命"}, {"en": "bell", "ja": "[名] ベル, 鈴"}, {"en": "hour", "ja": "[名] 1時間, 60分"}, {"en": "map", "ja": "[名] 地図"}, {"en": "Internet", "ja": "[名] インターネット"}, {"en": "Christmas", "ja": "[名] クリスマス"}, {"en": "upstairs", "ja": "[副] [形] [名] 階上 (で, へ, の)"}, {"en": "awake", "ja": "[形] 目が覚めて, 眠らずに"}, {"en": "bottom", "ja": "[形] [名] 一番下 (の), 底 (の)"}, {"en": "pale", "ja": "[形] 青白い；白っぽい"}, {"en": "upset", "ja": "[形] 取り乱している, うろたえている, 腹を立てている [動] 〜の心を乱す, 〜をうろたえさせる"}, {"en": "double", "ja": "[形] 2倍の, 二重の [名] 2倍 [動] 〜を2倍にする"}, {"en": "regular", "ja": "[形] 通常の, 規則的な"}, {"en": "careful", "ja": "[形] 気をつけて, 注意した"}, {"en": "unknown", "ja": "[形] 不明の, 未知の"}, {"en": "anywhere", "ja": "[副] どこにも, どこへも, どこかへ"}, {"en": "card", "ja": "[名] カード, 券, はがき"}, {"en": "church", "ja": "[名] 教会"}, {"en": "god", "ja": "[名] 神"}, {"en": "wheelchair", "ja": "[名] 車いす"}, {"en": "schedule", "ja": "[名] 予定 (表)"}, {"en": "festival", "ja": "[名] お祭り, 祝祭, 祭日"}, {"en": "tower", "ja": "[名] 塔, タワー"}, {"en": "shore", "ja": "[名] 岸, 海岸"}, {"en": "stone", "ja": "[名] 石"}, {"en": "slope", "ja": "[名] 坂"}, {"en": "meeting", "ja": "[名] 会議"}, {"en": "air", "ja": "[名] 空気, 大気"}, {"en": "pollution", "ja": "[名] 汚染, 公害"}, {"en": "presentation", "ja": "[名] 発表, 提案, プレゼン"}, {"en": "task", "ja": "[名] 仕事, 任務, 作業"}, {"en": "topic", "ja": "[名] 話題, (エッセイや講演などの) テーマ, 題目"}, {"en": "goal", "ja": "[名] 目標, 目的；ゴール"}, {"en": "clerk", "ja": "[名] 職員, 店員, 事務員, 係"}, {"en": "nurse", "ja": "[名] 看護師"}, {"en": "hospital", "ja": "[名] 病院"}, {"en": "police", "ja": "[名] 警察"}, {"en": "officer", "ja": "[名] 役人, 公務員, 警官"}, {"en": "voice", "ja": "[名] 声"}, {"en": "training", "ja": "[名] 訓練"}, {"en": "astronaut", "ja": "[名] 宇宙飛行士"}, {"en": "treasure", "ja": "[名] 宝物"}, {"en": "information", "ja": "[名] 情報"}, {"en": "smoking", "ja": "[名] 喫煙"}, {"en": "health", "ja": "[名] 健康"}, {"en": "accident", "ja": "[名] 事故"}, {"en": "drugstore", "ja": "[名] ドラッグストア"}, {"en": "dentist", "ja": "[名] 歯医者"}, {"en": "farmer", "ja": "[名] 農家, 農民, 農場主"}, {"en": "vegetable", "ja": "[名] 野菜"}, {"en": "strawberry", "ja": "[名] いちご"}, {"en": "hunting", "ja": "[名] 狩り"}, {"en": "forest", "ja": "[名] 森"}, {"en": "fruit", "ja": "[名] 果物；成果"}, {"en": "supermarket", "ja": "[名] スーパーマーケット, スーパー"}, {"en": "bean", "ja": "[名] 豆"}, {"en": "salad", "ja": "[名] サラダ"}, {"en": "sandwich", "ja": "[名] サンドイッチ"}, {"en": "bowl", "ja": "[名] 鉢, わん, ボウル"}, {"en": "tomato", "ja": "[名] トマト"}, {"en": "soup", "ja": "[名] スープ"}, {"en": "peach", "ja": "[名] 桃, ピーチ"}, {"en": "pie", "ja": "[名] パイ"}, {"en": "chocolate", "ja": "[名] チョコレート"}, {"en": "cake", "ja": "[名] ケーキ"}, {"en": "knife", "ja": "[名] ナイフ, 小刀"}, {"en": "tray", "ja": "[名] 盆, トレー"}, {"en": "cafeteria", "ja": "[名] カフェテリア, (セルフサービスの) 食堂"}, {"en": "plate", "ja": "[名] 皿"}, {"en": "present", "ja": "[名] プレゼント, 贈り物"}, {"en": "idea", "ja": "[名] 考え, 思いつき"}, {"en": "dress", "ja": "[名] 服, 服装 [動] 〜に服を着せる"}, {"en": "coat", "ja": "[名] コート"}, {"en": "style", "ja": "[名] スタイル, 型"}, {"en": "skirt", "ja": "[名] スカート"}, {"en": "shape", "ja": "[名] 形, 姿, 格好"}, {"en": "size", "ja": "[名] サイズ, 寸法"}, {"en": "price", "ja": "[名] 価格, 値段"}, {"en": "change", "ja": "[名] ①おつり ②変化 [動] ①〜を変える, 変わる ②着替える"}, {"en": "gift", "ja": "[名] 贈り物"}, {"en": "moment", "ja": "[名] 瞬間, 一瞬"}, {"en": "wine", "ja": "[名] ワイン, ぶどう酒"}, {"en": "money", "ja": "[名] お金"}, {"en": "reason", "ja": "[名] 理由, わけ"}, {"en": "cookie", "ja": "[名] クッキー, ビスケット"}, {"en": "firework", "ja": "[名] 花火"}, {"en": "zoo", "ja": "[名] 動物園"}, {"en": "vase", "ja": "[名] 花びん"}, {"en": "machine", "ja": "[名] 機械"}, {"en": "photo", "ja": "[名] 写真"}, {"en": "pleasure", "ja": "[名] 楽しみ, 喜び"}, {"en": "people", "ja": "[名] 人々；国民, 民族"}, {"en": "doll", "ja": "[名] 人形"}, {"en": "priest", "ja": "[名] 僧, 司祭"}, {"en": "temple", "ja": "[名] 寺 (院), 聖堂"}, {"en": "rock", "ja": "[名] 岩"}, {"en": "person", "ja": "[名] 人"}, {"en": "trouble", "ja": "[名] 苦労, 心配, 困難"}, {"en": "elephant", "ja": "[名] 象"}, {"en": "skiing", "ja": "[名] スキー"}, {"en": "skating", "ja": "[名] スケート"}, {"en": "ocean", "ja": "[名] 海, 大洋"}, {"en": "light", "ja": "[名] 光, 明かり [形] 軽い；明るい"}, {"en": "sound", "ja": "[名] 音, 響き [動] Cに聞こえる, 思える"}, {"en": "more", "ja": "[名] [形] [副] より多く (のもの；人) ；もっと"}, {"en": "environment", "ja": "[名] 環境"}, {"en": "lake", "ja": "[名] 湖"}, {"en": "message", "ja": "[名] メッセージ, 伝えたいこと, 伝言"}, {"en": "whale", "ja": "[名] クジラ"}, {"en": "way", "ja": "[名] ①方法, やり方 ②道"}, {"en": "earthquake", "ja": "[名] 地震"}, {"en": "peace", "ja": "[名] 平和"}, {"en": "war", "ja": "[名] 戦争"}, {"en": "graph", "ja": "[名] グラフ"}, {"en": "figure", "ja": "[名] ①数字 ②図 ③ (輪郭でわかる) 姿, 形"}, {"en": "table", "ja": "[名] ①表 ② (飲食用の) テーブル, 食卓"}, {"en": "foot", "ja": "[名] ①フィート ②足 ③ (山の) ふもと"}, {"en": "inch", "ja": "[名] インチ"}, {"en": "most", "ja": "[名] [形] [副] ①大部分 (の), たいてい (の人, もの) ②最も多く (のもの, 人)"}, {"en": "university", "ja": "[名] 大学"}, {"en": "age", "ja": "[名] 年齢, 年"}, {"en": "course", "ja": "[名] コース, 方向, 進行"}, {"en": "hundred", "ja": "[名] [形] 100 (の)"}, {"en": "temperature", "ja": "[名] 温度, 体温, 気温"}, {"en": "degree", "ja": "[名] (温度・角度などの) 度"}, {"en": "Celsius", "ja": "[名] セ氏"}, {"en": "quarter", "ja": "[名] 4分の1, 15分 (1/4時間), 25セント (1/4ドル)"}, {"en": "half", "ja": "[名] 半分 [形] 半分の [副] 半分は"}, {"en": "kind", "ja": "[名] 種類"}, {"en": "pond", "ja": "[名] 池, 沼"}, {"en": "owl", "ja": "[名] フクロウ"}, {"en": "penguin", "ja": "[名] ペンギン"}, {"en": "ice", "ja": "[名] 氷"}, {"en": "leaf", "ja": "[名] 葉"}, {"en": "rabbit", "ja": "[名] ウサギ"}, {"en": "vet", "ja": "[名] 獣医"}, {"en": "care", "ja": "[名] 世話, 介護, 注意 [動] Aを気づかう"}, {"en": "species", "ja": "[名] (生物の) 種"}, {"en": "example", "ja": "[名] 例"}, {"en": "type", "ja": "[名] 型, 種類, タイプ"}, {"en": "turtle", "ja": "[名] カメ, ウミガメ"}, {"en": "danger", "ja": "[名] 危険, 危機"}, {"en": "dinosaur", "ja": "[名] 恐竜"}, {"en": "million", "ja": "[名] [形] 100万 (の)"}, {"en": "field", "ja": "[名] ①野原 ②畑, 田 ③分野"}, {"en": "grass", "ja": "[名] 草 (地), 芝生 (地), 牧草 (地)"}, {"en": "hole", "ja": "[名] 穴"}, {"en": "ground", "ja": "[名] 土, 地面, 地中, 地下；グラウンド"}, {"en": "billion", "ja": "[名] [形] 10億 (の)"}, {"en": "planet", "ja": "[名] 惑星"}, {"en": "stadium", "ja": "[名] 競技場, 野球場, スタジアム"}, {"en": "country", "ja": "[名] ①田舎 ②国"}, {"en": "island", "ja": "[名] 島"}, {"en": "space", "ja": "[名] ①宇宙 ②空間"}, {"en": "land", "ja": "[名] 土地, 陸地 [動] 着陸する"}, {"en": "birth", "ja": "[名] 誕生"}, {"en": "ancestor", "ja": "[名] 祖先, 先祖, 先人"}, {"en": "bomb", "ja": "[名] 爆弾 [動] 〜を爆撃する"}, {"en": "soldier", "ja": "[名] 兵士, 兵, 軍人"}, {"en": "menu", "ja": "[名] メニュー"}, {"en": "order", "ja": "[名] ①注文 ②命令 [動] 〜と命じる, 言いつける"}, {"en": "steak", "ja": "[名] ステーキ"}, {"en": "beer", "ja": "[名] ビール"}, {"en": "anything", "ja": "[名] 何か"}, {"en": "dessert", "ja": "[名] デザート"}, {"en": "salt", "ja": "[名] 塩"}, {"en": "corn", "ja": "[名] トウモロコシ, コーン"}, {"en": "lemon", "ja": "[名] レモン"}, {"en": "juice", "ja": "[名] ジュース"}, {"en": "fridge", "ja": "[名] 冷蔵庫"}, {"en": "difference", "ja": "[名] 違い, 相違 (点), 差"}, {"en": "omelet", "ja": "[名] オムレツ"}, {"en": "spaghetti", "ja": "[名] スパゲッティー"}, {"en": "sausage", "ja": "[名] ソーセージ"}, {"en": "flavor", "ja": "[名] 味, 風味, 香り"}, {"en": "dish", "ja": "[名] ① (皿に盛った) 料理 ②大皿 ③食器類"}, {"en": "bamboo", "ja": "[名] 竹"}, {"en": "chopstick", "ja": "[名] 箸"}, {"en": "meal", "ja": "[名] 食事"}, {"en": "drop", "ja": "[名] しずく, 1滴 [動] 〜を落とす, 落ちる"}, {"en": "sauce", "ja": "[名] ソース"}, {"en": "soybean", "ja": "[名] 大豆"}, {"en": "chef", "ja": "[名] 料理長, シェフ, 料理をする人"}, {"en": "diet", "ja": "[名] ①食事 ②ダイエット, 食事制限"}, {"en": "recipe", "ja": "[名] レシピ, 調理法；秘訣"}, {"en": "honey", "ja": "[名] ①ハチミツ ②愛しいあなた"}, {"en": "garlic", "ja": "[名] ニンニク"}, {"en": "nut", "ja": "[名] 木の実, ナッツ"}, {"en": "Singapore", "ja": "[名] シンガポール"}, {"en": "Indonesia", "ja": "[名] インドネシア"}, {"en": "Thailand", "ja": "[名] タイ"}, {"en": "Hawaii", "ja": "[名] ハワイ"}, {"en": "Russia", "ja": "[名] ロシア"}, {"en": "Brazil", "ja": "[名] ブラジル"}, {"en": "nation", "ja": "[名] 国"}, {"en": "fact", "ja": "[名] 事実"}, {"en": "president", "ja": "[名] 大統領, 社長"}, {"en": "group", "ja": "[名] グループ, 集団"}, {"en": "waterfall", "ja": "[名] 滝"}, {"en": "factory", "ja": "[名] 工場"}, {"en": "mile", "ja": "[名] マイル"}, {"en": "entrance", "ja": "[名] 入口"}, {"en": "hall", "ja": "[名] ①会館, ホール ②玄関, 廊下"}, {"en": "side", "ja": "[名] 側面, 面"}, {"en": "purpose", "ja": "[名] 目的, 意図"}, {"en": "sightseeing", "ja": "[名] 観光"}, {"en": "bank", "ja": "[名] ①銀行 ② (川などの) 土手"}, {"en": "corner", "ja": "[名] 角, 曲がり角"}, {"en": "right", "ja": "[名] ①右 ②正しいこと ③権利 [形] ①正しい, ふさわしい ②右の [副] ①正しく, ふさわしい ②右に"}, {"en": "traffic", "ja": "[名] 通行, 交通 (量)"}, {"en": "stranger", "ja": "[名] ①不案内な人, 不慣れな人 ②見知らぬ人, よそから来た人"}, {"en": "castle", "ja": "[名] 城"}, {"en": "level", "ja": "[名] 水平, レベル"}, {"en": "guide", "ja": "[名] ガイド, 案内人；案内書 [動] 〜を案内する"}, {"en": "prefecture", "ja": "[名] 県"}, {"en": "flight", "ja": "[名] 飛行, 航空便, フライト"}, {"en": "wave", "ja": "[名] 波 [動] (手) を振る"}, {"en": "convenience", "ja": "[名] 便利, 好都合"}, {"en": "area", "ja": "[名] 地域, 地方"}, {"en": "test", "ja": "[名] 試験, テスト [動] 〜を試す, 試験する, 検証する"}, {"en": "laughter", "ja": "[名] 笑い"}, {"en": "courage", "ja": "[名] 勇気"}, {"en": "truth", "ja": "[名] 真実, 真理"}, {"en": "wife", "ja": "[名] 妻, 奥さん, 夫人"}, {"en": "joke", "ja": "[名] 冗談 [動] 冗談を言う"}, {"en": "feeling", "ja": "[名] 感じ, 感覚, 感情"}, {"en": "visitor", "ja": "[名] 訪問客, 観光客, 見学者"}, {"en": "kid", "ja": "[名] 子ども"}, {"en": "mom", "ja": "[名] ママ, お母さん"}, {"en": "toy", "ja": "[名] おもちゃ"}, {"en": "fishing", "ja": "[名] 釣り, 漁業"}, {"en": "nature", "ja": "[名] 自然"}, {"en": "situation", "ja": "[名] 状況"}, {"en": "tear", "ja": "[名] 涙"}, {"en": "handkerchief", "ja": "[名] ハンカチ"}, {"en": "pocket", "ja": "[名] ポケット"}, {"en": "death", "ja": "[名] 死"}, {"en": "action", "ja": "[名] 行動, 活動"}, {"en": "heritage", "ja": "[名] 遺産"}, {"en": "site", "ja": "[名] ①地域, 場所 ② (インターネットの) サイト"}, {"en": "plant", "ja": "[名] 植物, 草木 [動] 〜を植える"}, {"en": "desert", "ja": "[名] 砂漠"}, {"en": "crop", "ja": "[名] 農作物, 収穫物"}, {"en": "garbage", "ja": "[名] 生ごみ, くず"}, {"en": "amount", "ja": "[名] 量"}, {"en": "waste", "ja": "[名] 廃棄物, むだ (づかい), 浪費 [動] 〜を浪費する"}, {"en": "panel", "ja": "[名] パネル, (平らで長方形の) 板"}, {"en": "deer", "ja": "[名] 鹿"}, {"en": "valley", "ja": "[名] 谷, 低地"}, {"en": "queen", "ja": "[名] 女王"}, {"en": "bee", "ja": "[名] ハチ, ミツバチ"}, {"en": "pigeon", "ja": "[名] ハト"}, {"en": "distance", "ja": "[名] 距離"}, {"en": "roof", "ja": "[名] 屋根"}, {"en": "shrine", "ja": "[名] (日本の) 神社；聖室, 礼拝室"}, {"en": "husband", "ja": "[名] 夫"}, {"en": "bench", "ja": "[名] ベンチ, 長いす"}, {"en": "architect", "ja": "[名] 建築家"}, {"en": "sofa", "ja": "[名] ソファー"}, {"en": "piece", "ja": "[名] 断片, かけら"}, {"en": "furniture", "ja": "[名] 家具"}, {"en": "wood", "ja": "[名] ① (材料としての) 木, 木材 ②森, 林"}, {"en": "pot", "ja": "[名] つぼ, なべ"}, {"en": "importance", "ja": "[名] 重要性, 大切さ"}, {"en": "communication", "ja": "[名] 情報の伝達, 意志疎通, 通信"}, {"en": "sign", "ja": "[名] 標識, 記号, サイン, 表れ, しるし"}, {"en": "wall", "ja": "[名] 壁, へい"}, {"en": "pound", "ja": "[名] ポンド"}, {"en": "note", "ja": "[名] ①紙片, 札 ②メモ, 覚え書き [動] 〜を書き留める"}, {"en": "coin", "ja": "[名] 硬貨, コイン"}, {"en": "advice", "ja": "[名] 助言, アドバイス"}, {"en": "matter", "ja": "[名] ①困ったこと, 故障 ②物質, もの [動] 重要である"}, {"en": "headache", "ja": "[名] 頭痛"}, {"en": "fever", "ja": "[名] 熱, 発熱"}, {"en": "break", "ja": "[名] 休憩 [動] 〜を壊す, 割る, 破る"}, {"en": "e-mail", "ja": "[名] Eメール"}, {"en": "address", "ja": "[名] 住所"}, {"en": "technology", "ja": "[名] 科学技術, テクノロジー"}, {"en": "gas", "ja": "[名] ①ガソリン ②気体, ガス"}, {"en": "engineer", "ja": "[名] 技師, エンジニア"}, {"en": "engine", "ja": "[名] エンジン"}, {"en": "article", "ja": "[名] ①記事 ②品物"}, {"en": "camera", "ja": "[名] カメラ"}, {"en": "device", "ja": "[名] 装置, 仕掛け"}, {"en": "network", "ja": "[名] ネットワーク"}, {"en": "surface", "ja": "[名] 表面, 水面, 外見"}, {"en": "rocket", "ja": "[名] ロケット"}, {"en": "speed", "ja": "[名] スピード, 速度"}, {"en": "opinion", "ja": "[名] 意見"}, {"en": "someone", "ja": "[名] ある人, 人, 誰か"}, {"en": "company", "ja": "[名] 会社"}, {"en": "thousand", "ja": "[名] [形] 1"}, {"en": "copy", "ja": "[名] ① (本などの) 部, 冊 ②コピー, 複写 [動] 〜をコピーする, 写す"}, {"en": "staff", "ja": "[名] 職員, 社員, スタッフ"}, {"en": "interpreter", "ja": "[名] 通訳"}, {"en": "interview", "ja": "[名] インタビュー, 会見, 面接"}, {"en": "sale", "ja": "[名] 販売"}, {"en": "customer", "ja": "[名] (店の) 客"}, {"en": "manner", "ja": "[名] ①やり方, 方法, 物腰 ②作法, 行儀"}, {"en": "business", "ja": "[名] 事業, 仕事, 商売；企業, 会社"}, {"en": "step", "ja": "[名] 一歩, ステップ, 足の運び"}, {"en": "research", "ja": "[名] 調査 (研究) [動] 〜を調査する"}, {"en": "creativity", "ja": "[名] 創造性, 独創性"}, {"en": "artist", "ja": "[名] 芸術家"}, {"en": "character", "ja": "[名] ①登場人物 ②性格, 人格"}, {"en": "novel", "ja": "[名] 小説"}, {"en": "actor", "ja": "[名] 男優, 俳優"}, {"en": "audience", "ja": "[名] 観客, 聴衆, 聴き手"}, {"en": "seat", "ja": "[名] 席, 座る所"}, {"en": "league", "ja": "[名] 連盟, 同盟"}, {"en": "hero", "ja": "[名] 英雄, 偉人, ヒーロー"}, {"en": "athlete", "ja": "[名] 運動選手, スポーツマン"}, {"en": "gold", "ja": "[名] 金"}, {"en": "medal", "ja": "[名] メダル, 勲章"}, {"en": "marathon", "ja": "[名] マラソン"}, {"en": "captain", "ja": "[名] キャプテン, 主将"}, {"en": "match", "ja": "[名] 試合"}, {"en": "fan", "ja": "[名] ファン, 支持者"}, {"en": "wedding", "ja": "[名] 結婚式, 婚礼"}, {"en": "ceremony", "ja": "[名] 儀式, 祭式"}, {"en": "chance", "ja": "[名] 機会, 好機, チャンス"}, {"en": "memory", "ja": "[名] ①思い出 ②記憶力"}, {"en": "chorus", "ja": "[名] 合唱, コーラス；合唱団"}, {"en": "contest", "ja": "[名] コンテスト, 競技会"}, {"en": "grade", "ja": "[名] ①学年 ②成績, 評価"}, {"en": "neighbor", "ja": "[名] 近所の人, 隣人"}, {"en": "plan", "ja": "[名] 計画, 案, 予定 [動] 〜を計画する"}, {"en": "effort", "ja": "[名] 努力"}, {"en": "wish", "ja": "[名] 願い [動] 〜を願う"}, {"en": "mistake", "ja": "[名] 誤り, 間違い [動] 〜を間違える"}, {"en": "dictionary", "ja": "[名] 辞書"}, {"en": "discussion", "ja": "[名] 議論"}, {"en": "passport", "ja": "[名] パスポート"}, {"en": "license", "ja": "[名] 免許証"}, {"en": "politician", "ja": "[名] 政治家"}, {"en": "enemy", "ja": "[名] 敵"}, {"en": "disaster", "ja": "[名] 災害, 天災, 大惨事"}, {"en": "lawyer", "ja": "[名] 弁護士, 法律家"}, {"en": "movement", "ja": "[名] 運動, 動くこと"}, {"en": "volunteer", "ja": "[名] ボランティア"}, {"en": "activity", "ja": "[名] 活動"}, {"en": "aid", "ja": "[名] 援助 [動] 〜を援助する, 助ける"}, {"en": "citizen", "ja": "[名] 市民"}, {"en": "right", "ja": "[名] ①権利 ②正しいこと ③右の [形] ①正しい, ふさわしい ②右の [副] ①正しく, ふさわしい ②右に"}, {"en": "problem", "ja": "[名] 問題, 課題"}, {"en": "gun", "ja": "[名] 銃"}, {"en": "control", "ja": "[名] 規則 [動] 〜を制御する"}, {"en": "law", "ja": "[名] ①法律 ②規則"}, {"en": "report", "ja": "[名] 報告 [動] (〜を) 報告する"}, {"en": "effect", "ja": "[名] 影響, 効果, 結果"}, {"en": "climate", "ja": "[名] 気候"}, {"en": "king", "ja": "[名] 王様, 王"}, {"en": "position", "ja": "[名] 立場, 境遇, 位置, 場所"}, {"en": "government", "ja": "[名] 政府"}, {"en": "education", "ja": "[名] 教育"}, {"en": "system", "ja": "[名] 制度"}, {"en": "generation", "ja": "[名] 世代"}, {"en": "secret", "ja": "[名] 秘訣, 秘密 [形] 秘密の"}, {"en": "success", "ja": "[名] 成功"}, {"en": "rest", "ja": "[名] 休み, 休息 [動] 休む, 休息する"}, {"en": "cause", "ja": "[名] 原因, 理由 [動] 〜を引き起こす"}, {"en": "heart", "ja": "[名] 心臓；心"}, {"en": "disease", "ja": "[名] 病気, 疾病"}, {"en": "medicine", "ja": "[名] 薬"}, {"en": "pain", "ja": "[名] 痛み"}, {"en": "stomach", "ja": "[名] 胃"}, {"en": "dad", "ja": "[名] パパ, お父さん"}, {"en": "cellphone", "ja": "[名] 携帯電話"}, {"en": "hurry", "ja": "[名] 急ぐこと, 大あわて [動] 急ぐ；〜を急がせる"}, {"en": "diary", "ja": "[名] 日記"}, {"en": "result", "ja": "[名] 結果, 結末, 成り行き"}, {"en": "expression", "ja": "[名] 表現"}, {"en": "friendship", "ja": "[名] 友情"}, {"en": "grammar", "ja": "[名] 文法"}, {"en": "adjective", "ja": "[名] 形容詞"}, {"en": "adverb", "ja": "[名] 副詞"}, {"en": "article", "ja": "[名] 冠詞"}, {"en": "noun", "ja": "[名] 名詞"}, {"en": "preposition", "ja": "[名] 前置詞"}, {"en": "pronoun", "ja": "[名] 代名詞"}, {"en": "verb", "ja": "[名] 動詞"}, {"en": "crane", "ja": "[名] 鶴"}, {"en": "wing", "ja": "[名] 翼, 羽"}, {"en": "sunlight", "ja": "[名] 日光"}, {"en": "sunrise", "ja": "[名] 日の出"}, {"en": "sunset", "ja": "[名] 日没, 日暮れ時"}, {"en": "bat", "ja": "[名] コウモリ"}, {"en": "ability", "ja": "[名] 能力"}, {"en": "skin", "ja": "[名] 皮膚, 肌, 皮"}, {"en": "frog", "ja": "[名] カエル"}, {"en": "weed", "ja": "[名] 雑草 (の茂み)"}, {"en": "spider", "ja": "[名] クモ"}, {"en": "web", "ja": "[名] ①クモの巣 ②ウェブ, インターネット"}, {"en": "insect", "ja": "[名] 虫, 昆虫"}, {"en": "experiment", "ja": "[名] 実験 [動] 実験をする"}, {"en": "dolphin", "ja": "[名] イルカ"}, {"en": "butterfly", "ja": "[名] チョウ"}, {"en": "cage", "ja": "[名] (鳥などの) かご, おり"}, {"en": "title", "ja": "[名] 題名, 題"}, {"en": "spirit", "ja": "[名] 精神, 心；霊"}, {"en": "technique", "ja": "[名] 技術, 技巧, テクニック"}, {"en": "statue", "ja": "[名] 像, 彫像"}, {"en": "liberty", "ja": "[名] 自由"}, {"en": "author", "ja": "[名] 作家, 著者"}, {"en": "poem", "ja": "[名] 詩"}, {"en": "hobby", "ja": "[名] 趣味"}, {"en": "stamp", "ja": "[名] 切手"}, {"en": "magic", "ja": "[名] マジック, 手品, 魔術, 魔法"}, {"en": "performance", "ja": "[名] 上演, 公演, 演奏, 演技, パフォーマンス"}, {"en": "midnight", "ja": "[名] 夜の12時, 真夜中"}, {"en": "exhibition", "ja": "[名] 展示会, 展覧会"}, {"en": "craft", "ja": "[名] 技術, 技巧, 仕事"}, {"en": "product", "ja": "[名] 生産物, 製品"}, {"en": "chess", "ja": "[名] チェス"}, {"en": "tournament", "ja": "[名] トーナメント, 勝ち抜き戦"}, {"en": "champion", "ja": "[名] チャンピオン, 優勝者"}, {"en": "amusement", "ja": "[名] 娯楽 (設備), 楽しさ, 面白さ"}, {"en": "instrument", "ja": "[名] ①楽器 ②道具, 器具"}, {"en": "skill", "ja": "[名] 技能, 腕前, 技術"}, {"en": "advertisement", "ja": "[名] 広告, 宣伝, 告知"}, {"en": "model", "ja": "[名] モデル, 型, 模型；ファッションモデル"}, {"en": "sneaker", "ja": "[名] スニーカー"}, {"en": "fashion", "ja": "[名] ①ファッション ②流行"}, {"en": "magazine", "ja": "[名] 雑誌"}, {"en": "association", "ja": "[名] ①協会, 組織, 団体 ②関係, 関連, 連想"}, {"en": "cartoon", "ja": "[名] アニメ, 漫画"}, {"en": "alphabet", "ja": "[名] アルファベット, ABC"}, {"en": "kindergarten", "ja": "[名] 幼稚園"}, {"en": "subject", "ja": "[名] ①主題, テーマ ②教科, 学科, 科目"}, {"en": "project", "ja": "[名] 計画, (大規模な) 事業, 学習課題"}, {"en": "note", "ja": "[名] ①メモ, 覚え書き ②紙片, 札 [動] 〜を書き留める"}, {"en": "sheet", "ja": "[名] ① (紙の) 1枚 ②シーツ, 敷布"}, {"en": "knowledge", "ja": "[名] 知識"}, {"en": "geography", "ja": "[名] 地理 (学)"}, {"en": "point", "ja": "[名] 点；論点, 言い分；要点"}, {"en": "view", "ja": "[名] ①考え, 見方, 意見 ②視界 [動] 〜を見る, 考える"}, {"en": "data", "ja": "[名] データ, 資料"}, {"en": "quiz", "ja": "[名] 小テスト"}, {"en": "principal", "ja": "[名] 校長, 会長 [形] もっとも重要な, 主な"}, {"en": "chemistry", "ja": "[名] 化学"}, {"en": "greeting", "ja": "[名] あいさつ"}, {"en": "owner", "ja": "[名] 所有者, 飼い主"}, {"en": "case", "ja": "[名] 場合"}, {"en": "candle", "ja": "[名] ろうそく"}, {"en": "period", "ja": "[名] ①時代, 期間, 時期 ②ピリオド (終止符)"}, {"en": "windmill", "ja": "[名] 風車"}, {"en": "century", "ja": "[名] 世紀"}, {"en": "satellite", "ja": "[名] (人工) 衛星"}, {"en": "spaceship", "ja": "[名] 宇宙船"}, {"en": "host", "ja": "[名] (客を接待する) 主人, 主催者"}, {"en": "judge", "ja": "[名] 裁判官, 判事 [動] 〜を判決する"}, {"en": "noise", "ja": "[名] 音, 騒音"}, {"en": "campaign", "ja": "[名] (政治的・社会的) 運動"}, {"en": "army", "ja": "[名] 軍, 軍隊, 陸軍"}, {"en": "landmine", "ja": "[名] 地雷"}, {"en": "society", "ja": "[名] 社会"}, {"en": "media", "ja": "[名] メディア, マスコミ機関"}, {"en": "influence", "ja": "[名] 影響 [動] 〜に影響を与える"}, {"en": "choice", "ja": "[名] 選択, 選ぶこと"}, {"en": "eagle", "ja": "[名] ワシ"}, {"en": "symbol", "ja": "[名] 象徴, シンボル"}, {"en": "freedom", "ja": "[名] 自由"}, {"en": "resource", "ja": "[名] 資源, 資金"}, {"en": "mirror", "ja": "[名] 鏡"}, {"en": "fear", "ja": "[名] 恐怖, 恐れ [動] 〜を恐れる"}, {"en": "silence", "ja": "[名] 沈黙, 静けさ"}, {"en": "confidence", "ja": "[名] 自信, 信頼"}, {"en": "beauty", "ja": "[名] 美しさ"}, {"en": "conversation", "ja": "[名] 会話"}, {"en": "guest", "ja": "[名] 招待客, ホテルの宿泊客"}, {"en": "attendant", "ja": "[名] 接客係, 案内係, 付添人"}, {"en": "bow", "ja": "[名] おじぎ [動] おじぎをする"}, {"en": "attention", "ja": "[名] 注意"}, {"en": "fog", "ja": "[名] 霧"}, {"en": "difficulty", "ja": "[名] 困難, 苦労"}, {"en": "direction", "ja": "[名] 方向"}, {"en": "prize", "ja": "[名] 賞"}, {"en": "patient", "ja": "[名] 患者 [形] しんぼう強い"}, {"en": "poison", "ja": "[名] 毒, 毒薬, 毒物"}, {"en": "habit", "ja": "[名] 習慣"}, {"en": "exercise", "ja": "[名] 運動, 動かすこと [動] 運動する"}, {"en": "jogging", "ja": "[名] ジョギング"}, {"en": "cycling", "ja": "[名] サイクリング"}, {"en": "damage", "ja": "[名] 害, 損害 [動] 〜に損害を与える"}, {"en": "brain", "ja": "[名] 脳"}, {"en": "service", "ja": "[名] 事業, 仕事, 公益事業"}, {"en": "community", "ja": "[名] 地域社会, 共同体"}, {"en": "method", "ja": "[名] 方法"}, {"en": "rope", "ja": "[名] ロープ"}, {"en": "object", "ja": "[名] もの, 物体"}, {"en": "carpenter", "ja": "[名] 大工"}, {"en": "spot", "ja": "[名] 場所"}, {"en": "country", "ja": "[名] ①いなか ②国"}, {"en": "manner", "ja": "[名] ①作法, 行儀 ②やり方, 方法；物腰"}, {"en": "towel", "ja": "[名] タオル"}, {"en": "flag", "ja": "[名] 旗"}, {"en": "fence", "ja": "[名] へい, 囲い, フェンス"}, {"en": "gesture", "ja": "[名] ジェスチャー, 身ぶり"}, {"en": "mystery", "ja": "[名] 謎, ミステリー"}, {"en": "breath", "ja": "[名] 息, 呼吸"}, {"en": "couple", "ja": "[名] 1組；夫婦, 男女の1組"}, {"en": "purse", "ja": "[名] (女性の) 財布, ハンドバッグ；小銭入れ"}, {"en": "wallet", "ja": "[名] (男性の) 札入れ, 財布"}, {"en": "contact", "ja": "[名] 接触；連絡 [動] 〜と接触する"}, {"en": "album", "ja": "[名] アルバム"}, {"en": "lie", "ja": "[名] うそ [動] ①うそをつく, ②横たわる, ある"}, {"en": "attitude", "ja": "[名] 姿勢, 態度"}, {"en": "hardship", "ja": "[名] 困難, 苦難"}, {"en": "sweater", "ja": "[名] セーター"}, {"en": "drawer", "ja": "[名] 引き出し"}, {"en": "glove", "ja": "[名] 手袋"}, {"en": "guy", "ja": "[名] ①男, やつ ②みんな, 君たち"}, {"en": "panic", "ja": "[名] パニック, 動揺, 混乱状態"}, {"en": "challenge", "ja": "[名] ①難題, 課題 ②挑戦, チャレンジ"}, {"en": "appointment", "ja": "[名] 約束, 予約"}, {"en": "boss", "ja": "[名] 上司, 上役"}, {"en": "manager", "ja": "[名] 経営者, 支配人；(野球チームの) 監督"}, {"en": "salary", "ja": "[名] 給料, 月給"}, {"en": "apartment", "ja": "[名] マンション, アパート"}, {"en": "rent", "ja": "[名] 家賃 [動] 〜を賃貸 [賃借] する"}, {"en": "cash", "ja": "[名] 現金"}, {"en": "baggage", "ja": "[名] 手荷物"}, {"en": "fee", "ja": "[名] 料金, 手数料"}, {"en": "fare", "ja": "[名] 運賃"}, {"en": "mechanic", "ja": "[名] 整備士, 機械工"}, {"en": "file", "ja": "[名] ファイル；記録, データ"}, {"en": "source", "ja": "[名] 情報源, 源, 出所, 発生源"}, {"en": "stuff", "ja": "[名] 所持品, 荷物, もの, こと"}, {"en": "exit", "ja": "[名] 出口；退場"}];
+
+// ═══════ State ═══════
+let words = BUILTIN_WORDS;
+let deck = [];
+let idx = 0;
+let flipped = false;
+let direction = "en2ja";
+let results = [];
+let rangeStart = 1;
+let rangeEnd = 0;
+
+// ═══════ Persistent Record (localStorage) ═══════
+// record: { "idx": "correct"|"wrong" } keyed by word index in BUILTIN_WORDS
+const RECORD_KEY = "flashcard_record";
+
+function loadRecord() {
+  try {
+    const raw = localStorage.getItem(RECORD_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch(e) { return {}; }
+}
+
+function saveRecord(rec) {
+  try { localStorage.setItem(RECORD_KEY, JSON.stringify(rec)); } catch(e) {}
+}
+
+function getRecordStats() {
+  const rec = loadRecord();
+  const keys = Object.keys(rec);
+  const correctCount = keys.filter(k => rec[k] === "correct").length;
+  const wrongCount = keys.filter(k => rec[k] === "wrong").length;
+  return { total: keys.length, correct: correctCount, wrong: wrongCount };
+}
+
+function updateRecordStatsUI() {
+  const stats = getRecordStats();
+  const el = document.getElementById("recordStats");
+  if (el) {
+    if (stats.total === 0) {
+      el.textContent = "まだ記録がありません（学習すると自動で記録されます）";
+    } else {
+      el.textContent = "記録: ✅ 覚えた " + stats.correct + "語 / ❌ わからない " + stats.wrong + "語 / 全" + words.length + "語中";
+    }
+  }
+  // Disable buttons if no data
+  const btnW = document.getElementById("btnFilterWrong");
+  const btnC = document.getElementById("btnFilterCorrect");
+  if (btnW) btnW.disabled = stats.wrong === 0;
+  if (btnC) btnC.disabled = stats.correct === 0;
+  if (btnW) btnW.style.opacity = stats.wrong === 0 ? "0.4" : "1";
+  if (btnC) btnC.style.opacity = stats.correct === 0 ? "0.4" : "1";
+}
+
+function startFromRecord(filter) {
+  const rec = loadRecord();
+  const filtered = [];
+  for (let i = 0; i < words.length; i++) {
+    const key = String(i);
+    if (filter === "wrong" && rec[key] === "wrong") filtered.push(words[i]);
+    if (filter === "correct" && rec[key] === "correct") filtered.push(words[i]);
+  }
+  if (filtered.length === 0) {
+    alert(filter === "wrong" ? "「わからない」の記録がありません" : "「覚えた」の記録がありません");
+    return;
+  }
+  document.getElementById("settingsPanel").classList.remove("show");
+  startRound(shuffle(filtered));
+}
+
+function resetRecord() {
+  if (!confirm("累計の記録をすべてリセットしますか？")) return;
+  localStorage.removeItem(RECORD_KEY);
+  updateRecordStatsUI();
+}
+
+// ═══════ CSV Parser ═══════
+function parseCSV(text) {
+  const lines = text.trim().split(/\r?\n/);
+  const result = [];
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) continue;
+    let parts;
+    if (line.includes(",")) {
+      // Simple CSV parse handling quoted fields
+      const m = line.match(/^"?([^",]*)"?\s*,\s*"?([^"]*)"?/);
+      if (m && m[1] && m[2]) {
+        parts = [m[1].trim(), m[2].trim()];
+      } else {
+        parts = line.split(",").map(s => s.trim().replace(/^["']|["']$/g, ""));
+      }
+    } else if (line.includes("\t")) {
+      parts = line.split("\t").map(s => s.trim());
+    } else {
+      parts = line.split(/\s+(.+)/);
+    }
+    if (parts && parts.length >= 2 && parts[0] && parts[1]) {
+      const firstIsJa = /[\u3000-\u9fff\uff00-\uffef]/.test(parts[0]);
+      result.push(firstIsJa ? {en:parts[1],ja:parts[0]} : {en:parts[0],ja:parts[1]});
+    }
+  }
+  return result;
+}
+
+// ═══════ Shuffle ═══════
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ═══════ Helpers ═══════
+function esc(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+function updateRangeUI() {
+  document.getElementById("rangeNote").textContent = "(0=全" + words.length + "語)";
+}
+
+// ═══════ Render ═══════
+function renderCard() {
+  const w = deck[idx];
+  if (!w) return;
+  const front = direction === "en2ja" ? w.en : w.ja;
+  const back = direction === "en2ja" ? w.ja : w.en;
+  const frontIsEn = direction === "en2ja";
+
+  document.getElementById("frontLabel").textContent = frontIsEn ? "English" : "日本語";
+  document.getElementById("backLabel").textContent = frontIsEn ? "日本語" : "English";
+  document.getElementById("frontText").textContent = front;
+  document.getElementById("backText").textContent = back;
+  document.getElementById("frontText").className = "card-text" + (frontIsEn ? "" : " ja");
+  document.getElementById("backText").className = "card-text" + (frontIsEn ? " ja" : "");
+  document.getElementById("tapHint").style.display = flipped ? "none" : "block";
+
+  // Show original index
+  const origIdx = words.indexOf(w);
+  document.getElementById("cardNumber").textContent = origIdx >= 0 ? "No." + (origIdx + 1) : "";
+
+  document.getElementById("card").classList.toggle("flipped", flipped);
+
+  const correct = results.filter(r => r.correct).length;
+  const wrong = results.filter(r => !r.correct).length;
+  document.getElementById("progressCount").textContent = (idx+1) + " / " + deck.length;
+  document.getElementById("progressScore").textContent = "✅ " + correct + "　❌ " + wrong;
+  document.getElementById("progressFill").style.width = ((idx+1)/deck.length*100) + "%";
+}
+
+// ═══════ Actions ═══════
+function startRound(customDeck) {
+  const s = Math.max(0, rangeStart - 1);
+  const e = rangeEnd === 0 || rangeEnd > words.length ? words.length : rangeEnd;
+  deck = customDeck || shuffle(words.slice(s, e));
+  idx = 0;
+  flipped = false;
+  results = [];
+  document.getElementById("studyArea").classList.add("show");
+  document.getElementById("summary").classList.remove("show");
+  renderCard();
+}
+
+function flipCard() {
+  flipped = !flipped;
+  renderCard();
+}
+
+function answer(correct) {
+  results.push({ word: deck[idx], correct: correct });
+  // Save to persistent record
+  var wordIdx = words.indexOf(deck[idx]);
+  if (wordIdx >= 0) {
+    var rec = loadRecord();
+    rec[String(wordIdx)] = correct ? "correct" : "wrong";
+    saveRecord(rec);
+  }
+  if (idx + 1 < deck.length) {
+    const container = document.getElementById("studyArea");
+    container.classList.add("slide-out");
+    setTimeout(function() {
+      idx++;
+      flipped = false;
+      container.classList.remove("slide-out");
+      container.classList.add("slide-in");
+      renderCard();
+      setTimeout(function() { container.classList.remove("slide-in"); }, 300);
+    }, 250);
+  } else {
+    showSummary();
+  }
+}
+
+function showSummary() {
+  document.getElementById("studyArea").classList.remove("show");
+  document.getElementById("summary").classList.add("show");
+
+  const correct = results.filter(r => r.correct).length;
+  const total = results.length;
+  const wrongOnes = results.filter(r => !r.correct);
+
+  document.getElementById("summaryScore").textContent = correct + " / " + total;
+  document.getElementById("summaryRate").textContent = "正答率 " + (total > 0 ? Math.round(correct/total*100) : 0) + "%";
+
+  if (wrongOnes.length > 0) {
+    document.getElementById("wrongList").style.display = "block";
+    document.getElementById("wrongListTitle").textContent = "❌ 要復習（" + wrongOnes.length + "語）";
+    document.getElementById("wrongItems").innerHTML = wrongOnes.map(function(r) {
+      return '<div class="wrong-item"><span class="en">' + esc(r.word.en) + '</span><span class="ja">' + esc(r.word.ja) + '</span></div>';
+    }).join("");
+    document.getElementById("retryWrongBtn").style.display = "inline-block";
+  } else {
+    document.getElementById("wrongList").style.display = "none";
+    document.getElementById("retryWrongBtn").style.display = "none";
+  }
+  // Show cumulative record stats
+  var cStats = getRecordStats();
+  document.getElementById("summaryRecordStats").textContent = 
+    "【累計記録】 ✅ " + cStats.correct + "語 / ❌ " + cStats.wrong + "語 / 全" + words.length + "語中";
+}
+
+function retryWrong() {
+  var wrongWords = results.filter(function(r) { return !r.correct; }).map(function(r) { return r.word; });
+  startRound(shuffle(wrongWords));
+}
+
+function setDirection(dir) {
+  direction = dir;
+  document.getElementById("btnEn2Ja").classList.toggle("active", dir === "en2ja");
+  document.getElementById("btnJa2En").classList.toggle("active", dir === "ja2en");
+  renderCard();
+}
+
+function toggleSettings() {
+  document.getElementById("settingsPanel").classList.toggle("show");
+  updateRecordStatsUI();
+}
+
+function applyRange() {
+  rangeStart = parseInt(document.getElementById("rangeStart").value) || 1;
+  rangeEnd = parseInt(document.getElementById("rangeEnd").value) || 0;
+  document.getElementById("settingsPanel").classList.remove("show");
+  startRound();
+}
+
+function handleFileImport(e) {
+  var file = e.target.files && e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    var parsed = parseCSV(ev.target.result);
+    if (parsed.length === 0) {
+      alert("単語データが見つかりませんでした。CSV形式を確認してください。");
+      return;
+    }
+    words = parsed;
+    rangeStart = 1;
+    rangeEnd = 0;
+    document.getElementById("subtitle").textContent = file.name + " (" + parsed.length + "語)";
+    document.getElementById("settingsPanel").classList.remove("show");
+    updateRangeUI();
+    startRound();
+  };
+  reader.readAsText(file);
+}
+
+// ═══════ Keyboard shortcuts ═══════
+document.addEventListener("keydown", function(e) {
+  if (e.key === " " || e.key === "Enter") { e.preventDefault(); flipCard(); }
+  if (e.key === "ArrowLeft" || e.key === "1") { answer(false); }
+  if (e.key === "ArrowRight" || e.key === "2") { answer(true); }
+});
+
+// ═══════ Init ═══════
+updateRangeUI();
+updateRecordStatsUI();
+startRound();
+</script>
+</body>
+</html>
